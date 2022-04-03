@@ -1,12 +1,12 @@
-ALTER TABLE course ADD PRIMARY KEY(course_id);
 
-CREATE TABLE scores
-(
-    id MEDIUMINT,
-    s_id MEDIUMINT,
-    course_id VARCHAR(7),
-    score NUMERIC(5,2),
-    PRIMARY KEY(id),
-    FOREIGN KEY(course_id) REFERENCES course(course_id)
-);
-ALTER
+CREATE Function dept_count(dept_name VARCHAR(20))
+returns integer
+READS SQL DATA
+DETERMINISTIC
+begin
+declare d_count integer;
+    SELECT count(*) into d_count
+    FROM instructor
+    where instructor.dept_name=dept_name;
+return d_count;
+end;
