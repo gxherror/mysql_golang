@@ -1,0 +1,9 @@
+{
+    "student":"Shankar",
+    "takes":{
+    "course":[
+    "BIO-100",
+    "PHY-40"
+    ]    
+    }
+}

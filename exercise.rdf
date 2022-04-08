@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>              
+<!DOCTYPE RDF [                                                     
+     <!ENTITY cb "http://www.iro.umontreal.ca/lapalme/CellarBook" >
+]>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"   
+          xmlns:cb="&cb;#">                                           
+
+    <rdf:Description                                               
+        rdf:about="">
+         <cb:ownedBy>                          <!-- 1 -->
+            <rdf:Description  rdf:about=""/>
+        </cb:ownedBy>
+    </rdf:Description>
+    
+     <rdf:Description> 
+        <cb:named rdf:parseType="Resource">  <!-- 2 -->
+            <cb:first>Jude</cb:first>
+             <cb:family>Raisin</cb:family>
+        </cb:named>
+    </rdf:Description>
+</rdf:RDF>
