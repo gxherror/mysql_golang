@@ -1,0 +1,104 @@
+{
+    "version": "2.0.0",
+    "linux": {
+        "options": {
+            "env": {
+                "GOPATH": "${env:GOPATH}:${workspaceRoot}"
+            }
+        }
+    },
+    "windows": {
+        "options": {
+            "env": {
+                "GOPATH": "${env:GOPATH};${workspaceRoot}"
+            }
+        }
+    },
+    "osx": {
+        "options": {
+            "env": {
+                "GOPATH": "${env:GOPATH}:${workspaceRoot}"
+            }
+        }
+    },
+    "tasks": [
+        {
+            "label": "go build",
+            "command": "go",
+            "type": "shell",
+            "promptOnClose": false,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "args": [
+                "build",
+                "-i",
+                "-v"
+            ],
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": [
+                "$go"
+            ]
+        },
+        {
+            "label": "go run",
+            "command": "go",
+            "type": "shell",
+            "group": "none",
+            "args": [
+                "run",
+                "main.go"
+            ],
+            "promptOnClose": false,
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": [
+                "$go"
+            ]
+        },
+        {
+            "label": "go build & exec",
+            "command": "go",
+            "type": "shell",
+            "group": "none",
+            "windows": {
+                "args": [
+                    "build",
+                    "-i",
+                    "-v",
+                    "&",
+                    "${workspaceRootFolderName}.exe"
+                ]
+            },
+            "linux": {
+                "args": [
+                    "build",
+                    "-i",
+                    "-v",
+                    "|",
+                    "./${workspaceRootFolderName}"
+                ]
+            },
+            "osx": {
+                "args": [
+                    "build",
+                    "-i",
+                    "-v",
+                    "|",
+                    "./${workspaceRootFolderName}"
+                ]
+            },
+            "promptOnClose": false,
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": [
+                "$go"
+            ]
+        }
+    ]
+}
