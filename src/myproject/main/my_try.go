@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"io"
 )
 
 func home(w http.ResponseWriter, r *http.Request) {
@@ -28,6 +29,7 @@ type MyMux struct {
 }
 
 func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf(r.URL.Path)
     if r.URL.Path == "/" {
         home(w, r)
         return
@@ -36,8 +38,16 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         login(w, r)
         return
     }
+	if r.URL.Path == "/tip" {
+        tip(w, r)
+        return
+    }
 	if r.URL.Path == "/adder" {
-        adder(w, r)
+        adder_show_110(w, r)
+        return
+	}
+	if r.URL.Path == "/adder/operate" {
+        adder_110(w, r)
         return
 	}
 	if r.URL.Path == "/js" {
@@ -48,7 +58,7 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     return
 }
 
-func adder(w http.ResponseWriter,r *http.Request){
+func adder_100(w http.ResponseWriter,r *http.Request){
 	if r.Method == "GET" {
         t, _ := template.ParseFiles("../html/adder.html")
 		data:=map[string]string{
@@ -70,6 +80,34 @@ func adder(w http.ResponseWriter,r *http.Request){
 		}
     t.Execute(w, data)
 	}
+}
+
+func adder_show_110(w http.ResponseWriter,r *http.Request){
+	t, err:= template.ParseFiles("../html/adder@1.1.0.html")
+	if err != nil {
+		// handle error http.Error() for example
+		log.Fatal("ParseFiles: ", err)
+	}
+	log.Println(t.Execute(w, nil))
+}
+
+func adder_110(w http.ResponseWriter,r *http.Request){
+	err := r.ParseForm()   // 解析 url 传递的参数，对于 POST 则解析响应包的主体（request body）
+	if err != nil {
+		// handle error http.Error() for example
+		log.Fatal("ParseForm: ", err)
+	}
+	fmt.Printf(r.URL.RawQuery)
+	first,_:=strconv.Atoi(r.FormValue("Num1"))
+	second,_:=strconv.Atoi(r.FormValue("Num2"))
+	fmt.Println(first,second)
+	result:=strconv.Itoa(first+second)
+	io.WriteString(w, result)
+}
+
+func tip(w http.ResponseWriter,r *http.Request){
+	t, _ := template.ParseFiles("../html/tip.html")
+	log.Println(t.Execute(w, nil))	
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
@@ -95,9 +133,9 @@ func login(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux :=new(MyMux)
 	//指定相对路径./static 为文件服务路径
-	staticHandle := http.FileServer(http.Dir("../static/js"))
+	//staticHandle := http.FileServer(http.Dir("../static/js"))
 		//将/js/路径下的请求匹配到 ./static/js/下
-	mux.Handle("/js/", staticHandle)
+	//mux.Handle("/js/", staticHandle)
     //http.ListenAndServe(":9090", mux)
 	//mux.HandleFunc("/", sayhelloName)       // 设置访问的路由
 	//mux.HandleFunc("/login", login)         // 设置访问的路由

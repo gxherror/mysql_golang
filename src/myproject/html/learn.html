@@ -1,0 +1,26 @@
+//xmlhttp.setRequestHeader("Content-type":"application/x-www-form-urlencoded");
+}
+/*
+xmlDoc=xmlhttp.responseXML;  
+txt="";
+x=xmlDoc.getElementsByTagName("ARTIST");
+for (i=0;i<x.length;i++)
+{
+    txt=txt + x[i].childNodes[0].nodeValue + "<br>";
+}
+document.getElementById("myDiv").innerHTML=txt;
+*/
+//document.getElementById("myDiv").innerHTML=xmlhttp.responseXML;
+
+
+
+function myFunction()
+{
+    loadXMLDoc("/try/ajax/ajax_info.txt",function()
+    {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200)
+        {
+            document.getElementById("myDiv").innerHTML=xmlhttp.responseText;
+        }
+    });
+}
