@@ -1,5 +1,4 @@
-package main
-
+package go_sql
 import (
 	"database/sql"
 	"fmt"
@@ -67,16 +66,15 @@ func descTableDemo(){
 }
 
 // 查询单条数据示例
-func queryRowDemo() {
-	sqlStr := "select id,name,dept_name,tot_cred from student where id=?"
-	var student Student
+func queryRowDemo(name string) (student Student,err error) {
+	sqlStr := "select id,name,dept_name,tot_cred from student where name=?"
 	// 非常重要：确保QueryRow之后调用Scan方法，否则持有的数据库链接不会被释放
-	err := db.QueryRow(sqlStr, 12345).Scan(&student.id, &student.name, &student.dept_name, &student.tot_cred)
+	err = db.QueryRow(sqlStr, name).Scan(&student.id, &student.name, &student.dept_name, &student.tot_cred)
 	if err != nil {
 		fmt.Printf("scan failed, err:%v\n", err)
-		return
+		return student, err
 	}
-	fmt.Printf("id:%d\tname:%s\tdept_name:%s\ttot_cred:%d\n", student.id, student.name, student.dept_name, student.tot_cred)
+	return student,nil
 }
 
 // 查询多条数据示例

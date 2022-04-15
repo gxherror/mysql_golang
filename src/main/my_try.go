@@ -3,13 +3,19 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-	"io"
+	"go_sql"
 )
+// The HandlerFunc type is an adapter to allow the use of
+// ordinary functions as HTTP handlers. If f is a function
+// with the appropriate signature, HandlerFunc(f) is a
+// Handler that calls f.
+type HandlerFunc func(http.ResponseWriter, *http.Request)
 
 func home(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()       // 解析参数，默认是不会解析的
@@ -24,11 +30,11 @@ func home(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello astaxie!") // 这个写入到 w 的是输出到客户端的
 }
 
-type MyMux struct {
+type Mux struct {
 	http.ServeMux
 }
 
-func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (mux *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf(r.URL.Path)
     if r.URL.Path == "/" {
         home(w, r)
@@ -46,6 +52,10 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         adder_show_110(w, r)
         return
 	}
+	if r.URL.Path == "/student" {
+        student(w, r)
+        return
+	}
 	if r.URL.Path == "/adder/operate" {
         adder_110(w, r)
         return
@@ -58,7 +68,32 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     return
 }
 
+
+
+func student(w http.ResponseWriter,r *http.Request){
+	if r.URL.RawQuery == "" {
+	t, _ := template.ParseFiles("../html/student.html")
+	log.Println(t.Execute(w, nil))
+	}else {
+		r.ParseForm()
+		name:=r.FormValue("name")
+		fmt.Println(name)
+		go_sql.initDB()
+		student,err:=go_sql.queryRowDemo(name)
+		if err != nil {
+			// handle error http.Error() for example
+		   log.Fatal("queryRowDemo: ", err)
+		}
+		id:=strconv.Itoa(student.id)
+		tot_cred:=strconv.Itoa(student.tot_cred)
+		str:=id+"<br/>"+student.name+"<br/>"+student.dept_name+"<br/>"+tot_cred
+		//not "\n"
+		fmt.Fprintf(w,str) 
+	}
+}
+
 func adder_100(w http.ResponseWriter,r *http.Request){
+	
 	if r.Method == "GET" {
         t, _ := template.ParseFiles("../html/adder.html")
 		data:=map[string]string{
@@ -89,6 +124,7 @@ func adder_show_110(w http.ResponseWriter,r *http.Request){
 		log.Fatal("ParseFiles: ", err)
 	}
 	log.Println(t.Execute(w, nil))
+
 }
 
 func adder_110(w http.ResponseWriter,r *http.Request){
@@ -131,14 +167,17 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 
 func main() {
-	mux :=new(MyMux)
+	//mux 实现了 serveHTTP 可作为 Handle interface 
+	mux :=new(Mux)
 	//指定相对路径./static 为文件服务路径
 	//staticHandle := http.FileServer(http.Dir("../static/js"))
 		//将/js/路径下的请求匹配到 ./static/js/下
 	//mux.Handle("/js/", staticHandle)
     //http.ListenAndServe(":9090", mux)
 	//mux.HandleFunc("/", sayhelloName)       // 设置访问的路由
-	//mux.HandleFunc("/login", login)         // 设置访问的路由
+	mux.HandleFunc("/login", login)         // 设置访问的路由
+
+	// HandleFunc registers the handler function for the given pattern.
 	server := &http.Server{
 		Addr:         ":2333",
 		Handler:      mux,

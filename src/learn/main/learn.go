@@ -287,8 +287,8 @@ func main() {
 		fmt.Println(add2(&w, add1))
 
 		//var arr [5]byte
-		//odr s:=`Hello
-		//World`
+		/odr s:=`Hello
+		/World`
 		//s[0]='w' error
 	*/
 	/*
