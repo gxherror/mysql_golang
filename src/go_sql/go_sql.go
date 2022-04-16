@@ -1,19 +1,22 @@
 package go_sql
+
 import (
 	"database/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 )
 
-// 定义一个全局对象db
-var db *sql.DB
-
+//! 本身DB 继承sql.DB 调用方法
+type DB struct{
+sql.DB
+}
 
 //小写仅用于本包
 type Student struct {
-	id        int
-	name      string
-	dept_name string
-	tot_cred  int
+	Id        int
+	Name      string
+	Dept_name string
+	Tot_cred  int
 }
 
 type Descdata struct {
@@ -27,24 +30,25 @@ type Descdata struct {
 
 
 //initialize DB
-func initDB() (err error) {
-	// DSN:Data Source Name
-	dsn := "xherror:200430@tcp(127.0.0.1:3306)/learn?charset=utf8mb4&parseTime=True"
+func InitDB() (db *DB,err error) {
+	// DSN:Data Source name
+	dsn := "xherror_win:200430@tcp(192.168.0.191:3306)/learn?charset=utf8mb4&parseTime=True"
 	// 不会校验账号密码是否正确
 	// 注意！！！这里不要使用:=，我们是给全局变量赋值，然后在main函数中使用全局变量db
-	db, err = sql.Open("mysql", dsn)
+	odb, err := sql.Open("mysql", dsn)
+	db=&DB{*odb}  //!
 	if err != nil {
-		return err
+		return db,err
 	}
 	// 尝试与数据库建立连接（校验dsn是否正确）
 	err = db.Ping()
 	if err != nil {
-		return err
+		return db,err
 	}
-	return nil
+	return db,nil
 }
 
-func descTableDemo(){
+func (db *DB)DescTableDemo(){
 	sqlStr:="DESC student;"
 	var descdata Descdata
 	rows,err:=db.Query(sqlStr)
@@ -66,10 +70,10 @@ func descTableDemo(){
 }
 
 // 查询单条数据示例
-func queryRowDemo(name string) (student Student,err error) {
-	sqlStr := "select id,name,dept_name,tot_cred from student where name=?"
+func (db *DB)QueryRowDemo(name string) (student Student,err error) {
+	sqlStr := "select Id,name,Dept_name,Tot_cred from student where name=?"
 	// 非常重要：确保QueryRow之后调用Scan方法，否则持有的数据库链接不会被释放
-	err = db.QueryRow(sqlStr, name).Scan(&student.id, &student.name, &student.dept_name, &student.tot_cred)
+	err = db.QueryRow(sqlStr, name).Scan(&student.Id, &student.Name, &student.Dept_name, &student.Tot_cred)
 	if err != nil {
 		fmt.Printf("scan failed, err:%v\n", err)
 		return student, err
@@ -78,7 +82,7 @@ func queryRowDemo(name string) (student Student,err error) {
 }
 
 // 查询多条数据示例
-func queryMultiRowDemo() {
+func (db *DB)QueryMultiRowDemo() {
 	sqlStr := "select * from student;"
 	rows, err := db.Query(sqlStr)
 	if err != nil {
@@ -91,34 +95,34 @@ func queryMultiRowDemo() {
 	// 循环读取结果集中的数据
 	for rows.Next() {
 		var student Student
-		err := rows.Scan(&student.id, &student.name, &student.dept_name, &student.tot_cred)
+		err := rows.Scan(&student.Id, &student.Name, &student.Dept_name, &student.Tot_cred)
 		if err != nil {
 			fmt.Printf("scan failed, err:%v\n", err)
 			return
 		}
-		fmt.Printf("id:%d\tname:%s\tdept_name:%s\ttot_cred:%d\n", student.id, student.name, student.dept_name, student.tot_cred)
+		fmt.Printf("Id:%d\tname:%s\tDept_name:%s\tTot_cred:%d\n", student.Id, student.Name, student.Dept_name, student.Tot_cred)
 	}
 }
 
 // 插入数据
-func insertRowDemo() {
+func (db *DB)InsertRowDemo() {
 	sqlStr := "insert into student values (?,?,?,?)"
 	ret, err := db.Exec(sqlStr, 66666, "Sammy", "History", 100)
 	if err != nil {
 		fmt.Printf("insert failed, err:%v\n", err)
 		return
 	}
-	theID, err := ret.LastInsertId()
+	theId, err := ret.LastInsertId()
 	if err != nil {
-		fmt.Printf("get lastinsert ID failed, err:%v\n", err)
+		fmt.Printf("get lastinsert Id failed, err:%v\n", err)
 		return
 	}
-	fmt.Printf("insert success, the id is %d.\n", theID)
+	fmt.Printf("insert success, the Id is %d.\n", theId)
 }
 
 // 预处理查询示例
-func prepareQueryDemo() {
-	sqlStr := "select * from student where id > ?"
+func (db *DB)PrepareQueryDemo() {
+	sqlStr := "select * from student where Id > ?"
 	stmt, err := db.Prepare(sqlStr)
 	if err != nil {
 		fmt.Printf("prepare failed, err:%v\n", err)
@@ -134,31 +138,31 @@ func prepareQueryDemo() {
 	// 循环读取结果集中的数据
 	for rows.Next() {
 		var student Student
-		err := rows.Scan(&student.id, &student.name, &student.dept_name, &student.tot_cred)
+		err := rows.Scan(&student.Id, &student.Name, &student.Dept_name, &student.Tot_cred)
 		if err != nil {
 			fmt.Printf("scan failed, err:%v\n", err)
 			return
 		}
-		fmt.Printf("id:%d\tname:%s\tdept_name:%s\ttot_cred:%d\n", student.id, student.name, student.dept_name, student.tot_cred)
+		fmt.Printf("Id:%d\tname:%s\tDept_name:%s\tTot_cred:%d\n", student.Id, student.Name, student.Dept_name, student.Tot_cred)
 	}
 }
 
 // sql注入示例
-func sqlInjectDemo(name string) {
+func (db *DB)SqlInjectDemo(name string) {
 	sqlStr := fmt.Sprintf("select * from student where name='%s'", name)
 	fmt.Printf("SQL:%s\n", sqlStr)
 	var student Student
-	err := db.QueryRow(sqlStr).Scan(&student.id, &student.name, &student.dept_name, &student.tot_cred)
+	err := db.QueryRow(sqlStr).Scan(&student.Id, &student.Name, &student.Dept_name, &student.Tot_cred)
 	if err != nil {
 		fmt.Printf("exec failed, err:%v\n", err)
 		return
 	}
-	fmt.Printf("id:%d\tname:%s\tdept_name:%s\ttot_cred:%d\n", student.id, student.name, student.dept_name, student.tot_cred)
+	fmt.Printf("Id:%d\tname:%s\tDept_name:%s\tTot_cred:%d\n", student.Id, student.Name, student.Dept_name, student.Tot_cred)
 	//fmt.Printf("user:%#v\n", student)
 }
 
 // 事务操作示例
-func transactionDemo() {
+func (db *DB)TransactionDemo() {
 	tx, err := db.Begin() // 开启事务
 	if err != nil {
 		if tx != nil {
@@ -167,7 +171,7 @@ func transactionDemo() {
 		fmt.Printf("begin trans failed, err:%v\n", err)
 		return
 	}
-	sqlStr1 := "Update student set dept_name='Physics' where id=?;"
+	sqlStr1 := "Update student set Dept_name='Physics' where Id=?;"
 	ret1, err := tx.Exec(sqlStr1, 66666)
 	if err != nil {
 		tx.Rollback() // 回滚
@@ -181,7 +185,7 @@ func transactionDemo() {
 		return
 	}
 
-	sqlStr2 := "Update student set tot_cred=120 where id=?"
+	sqlStr2 := "Update student set Tot_cred=120 where Id=?"
 	ret2, err := tx.Exec(sqlStr2, 66666)
 	if err != nil {
 		tx.Rollback() // 回滚
