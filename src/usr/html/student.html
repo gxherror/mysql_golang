@@ -35,13 +35,16 @@ function showstudent(str)
 </script>
 </head>
 <body>
-
 <form action=""> 
-<select name="student" onchange="showstudent(this.value)" style="font-family:Verdana, Arial, Helvetica, sans-serif;">
-<option value="Shankar">Shankar</option>
-<option value="Brandt">Brandt</option>
-<option value="Brown">Brown</option>
-</select>
+  <select name="student" onchange="showstudent(this.value)" style="font-family:Verdana, Arial, Helvetica, sans-serif;">
+  <option value="Shankar">Shankar</option>
+  <option value="Brandt">Brandt</option>
+  <option value="Brown">Brown</option>
+  </select>
+</form>
+<form>
+name:<input type="text" name="name">
+<input type="submit" value="登录" onchange="showstudent(this.name)">
 </form>
 <br>
 <div id="txtHint">学生信息将显示在这...</div>

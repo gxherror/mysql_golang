@@ -148,6 +148,7 @@ func (db *DB)PrepareQueryDemo() {
 }
 
 // sql注入示例
+//xxx' union select * from student #
 func (db *DB)SqlInjectDemo(name string) {
 	sqlStr := fmt.Sprintf("select * from student where name='%s'", name)
 	fmt.Printf("SQL:%s\n", sqlStr)

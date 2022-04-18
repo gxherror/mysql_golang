@@ -2,7 +2,6 @@ package gee
 
 import (
 	"net/http"
-	"log"
 	"strings"
 )
 
@@ -13,14 +12,22 @@ type router struct {
 }
 
 func (mux *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.Method,r.URL.Path)
+	var middlewares []HandlerFunc
 	n,params:=mux.router.getRoute(r.Method,r.URL.Path)
+	for _,group :=range mux.groups{
+		if strings.HasPrefix(r.URL.Path,group.prefix){
+			middlewares=append(middlewares,group.middlewares...)
+		}
+	}
 	if n != nil {
 	k := r.Method + "-" + n.pattern
 	mux.router.para[k]=params
 	handler,ok:=mux.router.handlers[k]
 	if ok{
-		handler(w,r)
+		for _,phandler:=range middlewares{
+			phandler.Recovery(w,r)
+		}
+		handler.Recovery(w,r)
 	}
 	}else {
 		mux.handler_404(w,r)

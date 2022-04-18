@@ -182,11 +182,30 @@ func fibonacci(c chan int, quit chan int) {
 	}
 }
 
+func main() {
+	a := F()
+	a[0]()
+	a[1]()
+	a[2]()
+}
+func F() []func() {
+	b := make([]func(),3)
+	for i := 0; i < 3; i++ {
+		b[i] = func(j int ) func() {
+			return func ()  {
+				fmt.Println(&j, j)
+			}
+		}(i)
+	}
+	return b
+}
+
+/*
 
 //"T"
 //'T'
 func main() {
-	
+
 	/*
 	i := 10
 	switch i {
@@ -198,140 +217,140 @@ func main() {
 	default:
 		fmt.Println("T")
 	}
-	*/
-	/*
-			c := make(chan int)
-		    o := make(chan bool)
-		    go func() {
-		        for {
-		            select {
-		                case v := <- c:
-		                    println(v)
-		                case <- time.After(5 * time.Second):
-		                    println("timeout")
-		                    o <- true
-		                    // 此处的break只是跳出了select循环，并未终止for循环，要用return才能终止这个子进程
-		                	break
-		            }
-		        }
-		    }()
-		    <- o
-	*/
-	/*
-			c := make(chan int)
-		    quit := make(chan int)
-		    go func() {
-		        for i := 0; i < 10; i++ {
-		            fmt.Println(<-c)
-		        }
-		        quit <- 0
-		    }()
-		    fibonacci(c, quit)
-	*/
-	/*
-			c := make(chan int, 10)
-		    go fibonacci(cap(c), c)
-		    for i := range c {
-		        fmt.Println(i)
-		    }
-	*/
-	/*
-			c := make(chan int, 2) // 修改 2 为 1 就报错，修改 2 为 3 可以正常运行
-		    c <- 1
-		    c <- 2
-		    fmt.Println(<-c)
-		    fmt.Println(<-c)
-	*/
-	/*
-			//go say("world") // 开一个新的 Goroutines 执行
-			//say("hello")    // 当前 Goroutines 执行
-			a := []int{7, 2, 8, -9, 4, 0}
+*/
+/*
+		c := make(chan int)
+	    o := make(chan bool)
+	    go func() {
+	        for {
+	            select {
+	                case v := <- c:
+	                    println(v)
+	                case <- time.After(5 * time.Second):
+	                    println("timeout")
+	                    o <- true
+	                    // 此处的break只是跳出了select循环，并未终止for循环，要用return才能终止这个子进程
+	                	break
+	            }
+	        }
+	    }()
+	    <- o
+*/
+/*
+		c := make(chan int)
+	    quit := make(chan int)
+	    go func() {
+	        for i := 0; i < 10; i++ {
+	            fmt.Println(<-c)
+	        }
+	        quit <- 0
+	    }()
+	    fibonacci(c, quit)
+*/
+/*
+		c := make(chan int, 10)
+	    go fibonacci(cap(c), c)
+	    for i := range c {
+	        fmt.Println(i)
+	    }
+*/
+/*
+		c := make(chan int, 2) // 修改 2 为 1 就报错，修改 2 为 3 可以正常运行
+	    c <- 1
+	    c <- 2
+	    fmt.Println(<-c)
+	    fmt.Println(<-c)
+*/
+/*
+		//go say("world") // 开一个新的 Goroutines 执行
+		//say("hello")    // 当前 Goroutines 执行
+		a := []int{7, 2, 8, -9, 4, 0}
 
-		    c := make(chan int)
-		    go sum(a[:len(a)/2], c)
-		    go sum(a[len(a)/2:], c)
-		    x, y := <-c, <-c  // receive from c
+	    c := make(chan int)
+	    go sum(a[:len(a)/2], c)
+	    go sum(a[len(a)/2:], c)
+	    x, y := <-c, <-c  // receive from c
 
-		    fmt.Println(x, y, x + y)
-	*/
-	/*
-		user := User{1, "Allen.Wu", 25}
+	    fmt.Println(x, y, x + y)
+*/
+/*
+	user := User{1, "Allen.Wu", 25}
 
-		DoFiledAndMethod(user)
-	*/
-	/*
-		var num float64 = 1.2345
+	DoFiledAndMethod(user)
+*/
+/*
+	var num float64 = 1.2345
 
-		fmt.Println("type: ", reflect.TypeOf(num))
-		fmt.Println("value: ", reflect.ValueOf(num))
-		pointer := reflect.ValueOf(&num)
-		value := reflect.ValueOf(num)
-		fmt.Println(value.Type())
-		convertPointer := pointer.Interface().(*float64)
-		convertValue := value.Interface().(float64)
+	fmt.Println("type: ", reflect.TypeOf(num))
+	fmt.Println("value: ", reflect.ValueOf(num))
+	pointer := reflect.ValueOf(&num)
+	value := reflect.ValueOf(num)
+	fmt.Println(value.Type())
+	convertPointer := pointer.Interface().(*float64)
+	convertValue := value.Interface().(float64)
 
-		fmt.Println(convertPointer)
-		fmt.Println(convertValue)
-	*/
-	/*
-		var x float64=3.4
-		v:=reflect.ValueOf(x)
-		fmt.Println(v.Type())
-		student := Student{Human{"lihua", 18, 99999}, []string{"art", "swim"}, 99, 12345}
-		//var i Student_i= student
-		fmt.Println(student.String())
-		println(student.get_name())
-		student.set_score(88)
-		fmt.Println(student.get_age()) //method inherit
-		//defer_test(5)
-		fmt.Println(add2(&w, add1))
+	fmt.Println(convertPointer)
+	fmt.Println(convertValue)
+*/
+/*
+	var x float64=3.4
+	v:=reflect.ValueOf(x)
+	fmt.Println(v.Type())
+	student := Student{Human{"lihua", 18, 99999}, []string{"art", "swim"}, 99, 12345}
+	//var i Student_i= student
+	fmt.Println(student.String())
+	println(student.get_name())
+	student.set_score(88)
+	fmt.Println(student.get_age()) //method inherit
+	//defer_test(5)
+	fmt.Println(add2(&w, add1))
 
-		//var arr [5]byte
-		/odr s:=`Hello
-		/World`
-		//s[0]='w' error
-	*/
-	/*
-			a := [3]int{1, 2, 3}
-			a[0] = 0
-			w = 10
-			b := [...]int{1, 2, 3}
-			var bs []int = b[:]
-			var dict1 map[string]int
-			dict1 = make(map[string]int)
-			ptr1 := new(int)
-			var ptr2 *int
-			ptr2 = &w
-			fmt.Println(*ptr2)
-			*ptr1 = 8
-			fmt.Println(*ptr1)
-			dict1["one"] = 1
-			dict1["two"] = 2
-			dict1["three"] = 3
-			//bs=b[:]
-			b[0] = 0
-			c := []byte(s)
-			c[0] = 'w'
-			bs = append(bs, 4)
-			v, ok := dict1["one"]
-			fmt.Println(v, ok)
-			var sum int
+	//var arr [5]byte
+	/odr s:=`Hello
+	/World`
+	//s[0]='w' error
+*/
+/*
+		a := [3]int{1, 2, 3}
+		a[0] = 0
+		w = 10
+		b := [...]int{1, 2, 3}
+		var bs []int = b[:]
+		var dict1 map[string]int
+		dict1 = make(map[string]int)
+		ptr1 := new(int)
+		var ptr2 *int
+		ptr2 = &w
+		fmt.Println(*ptr2)
+		*ptr1 = 8
+		fmt.Println(*ptr1)
+		dict1["one"] = 1
+		dict1["two"] = 2
+		dict1["three"] = 3
+		//bs=b[:]
+		b[0] = 0
+		c := []byte(s)
+		c[0] = 'w'
+		bs = append(bs, 4)
+		v, ok := dict1["one"]
+		fmt.Println(v, ok)
+		var sum int
 
 
-			for sum < 100 {
-				sum *= 2
-			}
-			fmt.Println(sum)
+		for sum < 100 {
+			sum *= 2
+		}
+		fmt.Println(sum)
 
-			goto Label1
-			for k, v := range dict1 {
-				fmt.Println(k, v)
-			}
-		Label1:
-			if x := w; x > 0 {
-				fmt.Println("x greater than 0")
-			} else {
-				fmt.Println("x less than 0")
-			}
-	*/
-}
+		goto Label1
+		for k, v := range dict1 {
+			fmt.Println(k, v)
+		}
+	Label1:
+		if x := w; x > 0 {
+			fmt.Println("x greater than 0")
+		} else {
+			fmt.Println("x less than 0")
+		}
+*/
+//}
