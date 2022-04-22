@@ -20,6 +20,6 @@ func Pathjoin(arg []string) string{
 
 func Err(arg string,err error){
 	if err!=nil{
-		log.Fatal(arg,err)
+		log.Println(arg,err)
 	}
 }

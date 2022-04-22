@@ -15,3 +15,7 @@ replace gee => ../gee
 require my_utils v1.0.0
 
 replace my_utils => ../my_utils
+
+require session v1.0.0
+
+replace session => ../session
