@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/xml"
+	"encoding/json"
 	"crypto/md5"
 	"fmt"
 	"gee"
@@ -17,6 +18,7 @@ import (
 	"session"
 	"strconv"
 	"time"
+	"io/ioutil"
 )
 
 func Logger(w http.ResponseWriter, r *http.Request) {
@@ -185,7 +187,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			m, err = regexp.MatchString(reg_password, r.FormValue("password"))
 			Err("match:", err)
 			if m {
-				fmt.Fprintln(w, "<script>alert('password error')</script>")
+				fmt.Fprintln(w, template.HTML("<script>alert('password error')</script>"))
 				log.Println(t.Execute(w, nil))
 			}
 			http.Redirect(w, r, "/home/xherror", 302)
@@ -251,9 +253,75 @@ func Count(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, sess.Get("countnum"))
 }
 
+type Recurlyservers struct {
+    XMLName     xml.Name `xml:"servers"`
+    Version     string   `xml:"version,attr"`
+    Svs         []server `xml:"server"`
+    Description string   `xml:",innerxml"`
+}
+
+func Decoding_xml() {
+    file, err := os.Open("../usr/xml/servers.xml") // For read access.     
+    if err != nil {
+        fmt.Printf("error: %v", err)
+        return
+    }
+    defer file.Close()
+    data, err := ioutil.ReadAll(file)
+    if err != nil {
+        fmt.Printf("error: %v", err)
+        return
+    }
+    v := Recurlyservers{}
+    err = xml.Unmarshal(data, &v)
+    if err != nil {
+        fmt.Printf("error: %v", err)
+        return
+    }
+
+    fmt.Println(v)
+}
+
+type Server struct {
+    ServerName string
+    ServerIP   string
+}
+
+type Serverslice struct {
+    Servers []Server
+}
+
+func Encoding_json() {
+    var s Serverslice
+    str := `{"servers":[{"serverName":"Shanghai_VPN","serverIP":"127.0.0.1"},{"serverName":"Beijing_VPN","serverIP":"127.0.0.2"}]}`
+    json.Unmarshal([]byte(str), &s)
+    fmt.Println(s)
+}
 
 
+type Servers struct {
+    XMLName xml.Name `xml:"servers"`
+    Version string   `xml:"version,attr"`
+    Svs     []server `xml:"server"`
+}
 
+type server struct {
+    ServerName string `xml:"serverName"`
+    ServerIP   string `xml:"serverIP"`
+}
+
+func Encoding_xml() {
+    v := &Servers{Version: "1"}
+    v.Svs = append(v.Svs, server{"Shanghai_VPN", "127.0.0.1"})
+    v.Svs = append(v.Svs, server{"Beijing_VPN", "127.0.0.2"})
+    output, err := xml.MarshalIndent(v, "  ", "    ")
+    if err != nil {
+        fmt.Printf("error: %v\n", err)
+    }
+    os.Stdout.Write([]byte(xml.Header))
+
+    os.Stdout.Write(output)
+}
 
 
 

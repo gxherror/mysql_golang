@@ -183,11 +183,11 @@ func fibonacci(c chan int, quit chan int) {
 }
 
 func main() {
-	a := F()
-	a[0]()
-	a[1]()
-	a[2]()
+	
 }
+
+
+
 func F() []func() {
 	b := make([]func(),3)
 	for i := 0; i < 3; i++ {
