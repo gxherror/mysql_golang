@@ -95,8 +95,8 @@ func (group *Routergroup) Run(addr string) (err error){
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      group.mux,
-		ReadTimeout:  20 * time.Second,
-		WriteTimeout: 20 * time.Second,
+		ReadTimeout:  50 * time.Second,
+		WriteTimeout: 50 * time.Second,
 	  }
 	err= server.ListenAndServe()
 	return err

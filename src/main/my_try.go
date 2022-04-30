@@ -1,14 +1,15 @@
 package main
 
 import (
-	"encoding/xml"
-	"encoding/json"
 	"crypto/md5"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"gee"
 	"go_sql"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	. "my_utils"
 	"net/http"
@@ -18,9 +19,14 @@ import (
 	"session"
 	"strconv"
 	"time"
-	"io/ioutil"
+
+	"github.com/nicksnyder/go-i18n/i18n/bundle"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/net/websocket"
+	"golang.org/x/text/language"
 )
+
+var locales map[string]map[string]string
 
 func Logger(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.Method, r.URL.Path)
@@ -31,6 +37,24 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	w.Header()
 	para := mux.Get_para("GET", "/home/:name")
 	fmt.Fprintf(w, "<h1>Hello %s!</h1>", para["name"]) // 这个写入到 w 的是输出到客户端的
+
+}
+
+func Listbook(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm() // 解析参数，默认是不会解析的
+	w.Header()
+	para := mux.Get_para("GET", "/:locale/books")
+	msg:=msg(para["locale"],"time-zone")
+	loc,err:=time.LoadLocation(msg)
+	Err("Time",err)
+	t := time.Now()
+	//t.Date()
+	//t.Clock()
+	fmt.Println("one: ",t)
+	t=t.In(loc)
+	fmt.Println("two: ",t)
+	fmt.Fprintf(w, "<h1>INFORMATION:%s</h1>", t)
+	fmt.Fprintf(w, "<h1>Hello %s!</h1><h2>%s</h2>", para["locale"], r.RemoteAddr) // 这个写入到 w 的是输出到客户端的
 
 }
 
@@ -155,8 +179,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		t, _ := template.ParseFiles("../usr/html/login.html")
 		h := md5.New()
-		salt := "astaxie%^7&8888"
-		io.WriteString(h, salt+time.Now().String())
+		salt := "astaxie%^7&8888"                   //! hash add salt
+		io.WriteString(h, salt+time.Now().String()) //! add token to defend dp attack
 		token := fmt.Sprintf("%x", h.Sum(nil))
 		sess.Set("token", token)
 		p := make(map[string]interface{})
@@ -198,7 +222,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			//one:template.HTMLEscapeString(r.Form.Get("username"))
 			//or use r.FormValue("username") only return first one
 		} else {
-			fmt.Fprintln(w, "<script>请勿重复提交;</script>")
+			fmt.Fprintln(w, "<script>alert('请勿重复提交');</script>")
 		}
 	}
 }
@@ -255,73 +279,72 @@ func Count(w http.ResponseWriter, r *http.Request) {
 }
 
 type Recurlyservers struct {
-    XMLName     xml.Name `xml:"servers"`
-    Version     string   `xml:"version,attr"`
-    Svs         []server `xml:"server"`
-    Description string   `xml:",innerxml"`
+	XMLName     xml.Name `xml:"servers"`
+	Version     string   `xml:"version,attr"`
+	Svs         []server `xml:"server"`
+	Description string   `xml:",innerxml"`
 }
 
 func Decoding_xml() {
-    file, err := os.Open("../usr/xml/servers.xml") // For read access.     
-    if err != nil {
-        fmt.Printf("error: %v", err)
-        return
-    }
-    defer file.Close()
-    data, err := ioutil.ReadAll(file)
-    if err != nil {
-        fmt.Printf("error: %v", err)
-        return
-    }
-    v := Recurlyservers{}
-    err = xml.Unmarshal(data, &v)
-    if err != nil {
-        fmt.Printf("error: %v", err)
-        return
-    }
+	file, err := os.Open("../usr/xml/servers.xml") // For read access.
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
+	defer file.Close()
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
+	v := Recurlyservers{}
+	err = xml.Unmarshal(data, &v)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
 
-    fmt.Println(v)
+	fmt.Println(v)
 }
 
 type Server struct {
-    ServerName string
-    ServerIP   string
+	ServerName string
+	ServerIP   string
 }
 
 type Serverslice struct {
-    Servers []Server
+	Servers []Server
 }
 
 func Encoding_json() {
-    var s Serverslice
-    str := `{"servers":[{"serverName":"Shanghai_VPN","serverIP":"127.0.0.1"},{"serverName":"Beijing_VPN","serverIP":"127.0.0.2"}]}`
-    json.Unmarshal([]byte(str), &s)
-    fmt.Println(s)
+	var s Serverslice
+	str := `{"servers":[{"serverName":"Shanghai_VPN","serverIP":"127.0.0.1"},{"serverName":"Beijing_VPN","serverIP":"127.0.0.2"}]}`
+	json.Unmarshal([]byte(str), &s)
+	fmt.Println(s)
 }
 
-
 type Servers struct {
-    XMLName xml.Name `xml:"servers"`
-    Version string   `xml:"version,attr"`
-    Svs     []server `xml:"server"`
+	XMLName xml.Name `xml:"servers"`
+	Version string   `xml:"version,attr"`
+	Svs     []server `xml:"server"`
 }
 
 type server struct {
-    ServerName string `xml:"serverName"`
-    ServerIP   string `xml:"serverIP"`
+	ServerName string `xml:"serverName"`
+	ServerIP   string `xml:"serverIP"`
 }
 
 func Encoding_xml() {
-    v := &Servers{Version: "1"}
-    v.Svs = append(v.Svs, server{"Shanghai_VPN", "127.0.0.1"})
-    v.Svs = append(v.Svs, server{"Beijing_VPN", "127.0.0.2"})
-    output, err := xml.MarshalIndent(v, "  ", "    ")
-    if err != nil {
-        fmt.Printf("error: %v\n", err)
-    }
-    os.Stdout.Write([]byte(xml.Header))
+	v := &Servers{Version: "1"}
+	v.Svs = append(v.Svs, server{"Shanghai_VPN", "127.0.0.1"})
+	v.Svs = append(v.Svs, server{"Beijing_VPN", "127.0.0.2"})
+	output, err := xml.MarshalIndent(v, "  ", "    ")
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+	}
+	os.Stdout.Write([]byte(xml.Header))
 
-    os.Stdout.Write(output)
+	os.Stdout.Write(output)
 }
 
 func Echo(ws *websocket.Conn) {
@@ -347,20 +370,45 @@ func Echo(ws *websocket.Conn) {
 	}
 }
 
+func Locale() {
+	locales = make(map[string]map[string]string, 2)
+	en := make(map[string]string, 10)
+	en["pea"] = "pea"
+	en["bean"] = "bean"
+	en["time-zone"] = "America/Chicago"
 
+	locales["en"] = en
+	cn := make(map[string]string, 10)
+	cn["pea"] = "豌豆"
+	cn["bean"] = "毛豆"
+	cn["time-zone"] = "Asia/Shanghai"
+	locales["zh-CN"] = cn
+}
 
-
+func msg(locale, key string) string {
+	if v, ok := locales[locale]; ok {
+		if v2, ok := v[key]; ok {
+			return v2
+		}
+	}
+	return ""
+}
 
 var mux *gee.Mux
 var globalSessions *session.Manager
 
 func main() {
+	bundle:=i18n.NewBundle(language.English)
+	bundle.RegisterUnmarshalFunc()
 	globalSessions, _ = session.NewManager("memory", "gosessionid", 3600)
 	go globalSessions.GC()
+
 	//for cpu-bonud task
 	num := runtime.NumCPU()
 	runtime.GOMAXPROCS(num)
 	fmt.Println("Set Max CPU number:", num)
+
+	Locale()
 
 	//mux 实现了 serveHTTP 可作为 Handle interface
 	mux = gee.New()
@@ -368,6 +416,8 @@ func main() {
 	//g1:=mux.Group("/admin")
 	g2 := mux.Group("/usr")
 	mux.Use(Logger)
+	mux.GET("/:locale/books", Listbook)
+
 	mux.GET("/home/:name", Home)
 	mux.GET("/student", Student)
 	mux.GET("/adder", Adder)

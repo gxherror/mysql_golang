@@ -16,7 +16,7 @@ type Quotient struct {
     Quo, Rem int
 }
 
-func main() {
+func tmain() {
     if len(os.Args) != 2 {
         fmt.Println("Usage: ", os.Args[0], "server")
         os.Exit(1)
