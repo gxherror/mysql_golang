@@ -19,11 +19,9 @@ import (
 	"session"
 	"strconv"
 	"time"
-
-	"github.com/nicksnyder/go-i18n/i18n/bundle"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"golang.org/x/net/websocket"
 	"golang.org/x/text/language"
+	"golang.org/x/net/websocket"
 )
 
 var locales map[string]map[string]string
@@ -35,6 +33,22 @@ func Logger(w http.ResponseWriter, r *http.Request) {
 func Home(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm() // 解析参数，默认是不会解析的
 	w.Header()
+	//loc := i18n.NewLocalizer(bundle, "en", "zh-cn")
+
+	//name := r.FormValue("name")
+	//if name == "" {
+	//	name = "Bob"
+	//}
+	//messagesCount := 10
+	//translation := loc.MustLocalize(&i18n.LocalizeConfig{
+	//	MessageID: "messages",
+	//	TemplateData: map[string]interface{}{
+	//		"Name":  "Alex",
+	//		"Count": messagesCount,
+	//	},
+	//	PluralCount: messagesCount,
+	//})
+
 	para := mux.Get_para("GET", "/home/:name")
 	fmt.Fprintf(w, "<h1>Hello %s!</h1>", para["name"]) // 这个写入到 w 的是输出到客户端的
 
@@ -55,7 +69,6 @@ func Listbook(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("two: ",t)
 	fmt.Fprintf(w, "<h1>INFORMATION:%s</h1>", t)
 	fmt.Fprintf(w, "<h1>Hello %s!</h1><h2>%s</h2>", para["locale"], r.RemoteAddr) // 这个写入到 w 的是输出到客户端的
-
 }
 
 func Student(w http.ResponseWriter, r *http.Request) {
@@ -396,10 +409,12 @@ func msg(locale, key string) string {
 
 var mux *gee.Mux
 var globalSessions *session.Manager
-
+var bundle *i18n.Bundle
 func main() {
-	bundle:=i18n.NewBundle(language.English)
-	bundle.RegisterUnmarshalFunc()
+	bundle = i18n.NewBundle(language.SimplifiedChinese)
+	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
+	bundle.MustLoadMessageFile("../usr/json/en-us.json") // 从文件解析
+	bundle.MustLoadMessageFile("../usr/json/el.json")
 	globalSessions, _ = session.NewManager("memory", "gosessionid", 3600)
 	go globalSessions.GC()
 

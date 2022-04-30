@@ -28,7 +28,8 @@ func (handler HandlerFunc) Recovery(w http.ResponseWriter, r *http.Request) {
 		if err := recover(); err != nil {
 			message := fmt.Sprintf("%s", err)
 			log.Printf("%s\n\n", Trace(message))
-			fmt.Fprintf(w, "Internal Server Error")
+			http.Error(w, "Internal Server Error",500)
+			//fmt.Fprintf(w, "Internal Server Error")
 		}
 	}()
 		handler(w,r)

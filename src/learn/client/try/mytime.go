@@ -45,6 +45,6 @@ func testTime() {
     parseWithLocation("Asia/Shanghai", str)
     parseWithLocation("Asia/Beijing", str)
 }
-func main()  {
+func tmain()  {
 	testTime()
 }
