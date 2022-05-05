@@ -3,15 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <title>Tiny Server</title>
-<script>
-alert("Welcome")
-</script>
 </head>
 <body>
-<form action="/cgi/form-adder" method="GET">
-  <p>first number: <input type="text" name="first"/></p>
-  <p>second number: <input type="text" name="second"/></p>
-  <input type="submit" value="Submit"/>
-</form>
+{{.Content}}
 </body>
 </html>
