@@ -5,23 +5,28 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"gee"
+	"gee/config"
+	"gee/gee"
+	"gee/logger"
+	"gee/session"
 	"go_sql"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
+
+	"main/models"
 	. "my_utils"
 	"net/http"
 	"os"
 	"regexp"
 	"runtime"
-	"session"
 	"strconv"
 	"time"
+
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"golang.org/x/text/language"
 	"golang.org/x/net/websocket"
+	"golang.org/x/text/language"
 )
 
 var locales map[string]map[string]string
@@ -33,7 +38,7 @@ func Logger(w http.ResponseWriter, r *http.Request) {
 func Home(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm() // 解析参数，默认是不会解析的
 	w.Header()
-	//loc := i18n.NewLocalizer(bundle, "en", "zh-cn")
+	//loc := i18n.NewLocalizer(bundle, "el", "en-us")
 
 	//name := r.FormValue("name")
 	//if name == "" {
@@ -41,8 +46,8 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	//}
 	//messagesCount := 10
 	//translation := loc.MustLocalize(&i18n.LocalizeConfig{
-	//	MessageID: "messages",
-	//	TemplateData: map[string]interface{}{
+	//		MessageID: "messages",
+	//		TemplateData: map[string]interface{}{
 	//		"Name":  "Alex",
 	//		"Count": messagesCount,
 	//	},
@@ -54,19 +59,42 @@ func Home(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func Root(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, `<!DOCTYPE html>
+	<html>
+	<head>
+	
+		<link rel="stylesheet" href="/usr/css/prism.css" />
+	<meta charset="utf-8" />
+	<title>Blog</title>
+	</head>
+	<body>
+	{{.Content}}
+	<pre><code class="language-go">
+	import "fmt"
+	func main(){
+		fmt.prtintln("HELLO WORLD")
+	}
+	</code></pre>
+	<script src="/usr/js/prism.js"></script>
+	</body>
+	</html>
+	`)
+}
+
 func Listbook(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm() // 解析参数，默认是不会解析的
 	w.Header()
 	para := mux.Get_para("GET", "/:locale/books")
-	msg:=msg(para["locale"],"time-zone")
-	loc,err:=time.LoadLocation(msg)
-	Err("Time",err)
+	msg := msg(para["locale"], "time-zone")
+	loc, err := time.LoadLocation(msg)
+	Err("Time", err)
 	t := time.Now()
 	//t.Date()
 	//t.Clock()
-	fmt.Println("one: ",t)
-	t=t.In(loc)
-	fmt.Println("two: ",t)
+	fmt.Println("one: ", t)
+	t = t.In(loc)
+	fmt.Println("two: ", t)
 	fmt.Fprintf(w, "<h1>INFORMATION:%s</h1>", t)
 	fmt.Fprintf(w, "<h1>Hello %s!</h1><h2>%s</h2>", para["locale"], r.RemoteAddr) // 这个写入到 w 的是输出到客户端的
 }
@@ -210,9 +238,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			sess.Set("username", r.FormValue("username"))
 			//http.Redirect(w, r, "/", 302)
 			//cookie,_:=r.Cookie("Value")
-
-			fmt.Println("username:", r.Form["username"])
-			fmt.Println("password:", r.Form["password"])
+			logger.Info("username:", r.Form["username"], "password:", r.Form["password"])
+			//fmt.Println("username:", r.Form["username"])
+			//fmt.Println("password:", r.Form["password"])
 			reg_password := string("^(.{0,7}|.{21,}|[^0-9]*|[^a-z]*|[^A-Z]*|[^_&!$@#%]*)$|[^0-9a-zA-Z_&!$@#%]")
 			//reg_password:=string("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[&!$@#%])[^]{8,20}$")
 			reg_username := string("^[a-zA-Z_*-]{1,10}$")
@@ -289,6 +317,36 @@ func Count(w http.ResponseWriter, r *http.Request) {
 	//w.Header().Set("Content-Type", "text/html")
 	//t.Execute(w, sess.Get("countnum"))
 	fmt.Fprintln(w, sess.Get("countnum"))
+}
+
+func Blog(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	para:=mux.Get_para("GET","/blog/:blog_name")
+	switch r.Method {
+	case "GET":
+		{
+			lang := "zh-CN"
+			if r.Form.Get("lang") != "" {
+				lang = r.Form.Get("lang")
+			}
+			if lang == "zh-CN" || lang == "en-US" {
+				path:="./usr/blog/"+lang+"/"+para["blog_name"]
+				content:=models.Get_blog(path)
+				t, _ := template.ParseFiles("./views/blog.html")
+				data := map[string]interface{}{
+					"Content":content,
+				}
+				log.Println(t.Execute(w, data))
+			} else {
+				fmt.Fprintf(w, "<script>UNSUPPORT LANGUAGE!</script>")
+				http.Redirect(w, r, "/", http.StatusFound)
+			}
+		}
+	case "POST":
+		{
+			
+		}
+	}
 }
 
 type Recurlyservers struct {
@@ -410,16 +468,27 @@ func msg(locale, key string) string {
 var mux *gee.Mux
 var globalSessions *session.Manager
 var bundle *i18n.Bundle
+
 func main() {
+	logger.SetLogger(log.New(os.Stdout, "", log.Ldate|log.Ltime))
+	logger.Setlevel(2)
+
+	config, err := config.LoadConfig("gee.conf")
+	if err != nil {
+		logger.Critical("Load config error", err)
+	}
 	bundle = i18n.NewBundle(language.SimplifiedChinese)
 	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
-	bundle.MustLoadMessageFile("../usr/json/en-us.json") 
-	bundle.MustLoadMessageFile("../usr/json/el.json")
+	//bundle.MustLoadMessageFile("../usr/json/en-us.json") // 从文件解析
+	//bundle.MustLoadMessageFile("../usr/json/zh-ch.json")
 	globalSessions, _ = session.NewManager("memory", "gosessionid", 3600)
 	go globalSessions.GC()
 
 	//for cpu-bonud task
-	num := runtime.NumCPU()
+	num, _ := config.Int("cpu_num")
+	if num == 0 {
+		num = runtime.NumCPU()
+	}
 	runtime.GOMAXPROCS(num)
 	fmt.Println("Set Max CPU number:", num)
 
@@ -431,9 +500,10 @@ func main() {
 	//g1:=mux.Group("/admin")
 	g2 := mux.Group("/usr")
 	mux.Use(Logger)
-	mux.GET("/:locale/books", Listbook)
-
+	//mux.GET("/:locale/books", Listbook)
+	g2.GET("/blog/:blog_name", Blog)
 	mux.GET("/home/:name", Home)
+	//mux.GET("/", Root)
 	mux.GET("/student", Student)
 	mux.GET("/adder", Adder)
 	mux.GET("/sub", Sub)
@@ -450,7 +520,7 @@ func main() {
 	//mux.GETS()
 	//mux.GET("/j","json","../json/one.json")
 	// HandleFunc registers the handler function for the given pattern.
-	err := mux.Run(":23333")
+	err = mux.Run(":23333")
 	if err != nil {
 		log.Fatal("Run:", err)
 	}

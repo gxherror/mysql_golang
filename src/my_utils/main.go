@@ -4,7 +4,7 @@ import (
 	"log"
 )
 func Pathjoin(arg []string) string{
-	result:=".."
+	result:="."
 	sys:=runtime.GOOS
 	if sys== "windows"{
 		for _,v :=range(arg){

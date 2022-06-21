@@ -1,0 +1,243 @@
+<!DOCTYPE html><html lang="zh-CN"><head><title data-react-helmet="true">golang bufio、ioutil读文件的速度比较（性能测试）和影响因素分析 - SegmentFault 思否</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <meta httpequiv="X-UA-Compatible" content="IE=edge, chrome=1">
+    <meta name="renderer" content="webkit">
+    <meta name="alexaVerifyID" content="LkzCRJ7rPEUwt6fVey2vhxiw1vQ">
+    <meta name="apple-itunes-app" content="app-id=958101793, app-argument=">
+    <meta property="qc:admins" content="15317273575564615446375">
+    <meta name="msapplication-TileColor" content="#009a61">
+    <meta name="sogou_site_verification" content="MKVKCoIjwL">
+    <meta name="360-site-verification" content="737314c9bf48873a1a0a22295203d9d1">
+    <meta rel="apple-touch-icon" href="https://cdn.segmentfault.com/r-cce1b45f/touch-icon.png">
+    <meta name="msapplication-square150x150logo" content="https://cdn.segmentfault.com/r-cce1b45f/touch-icon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="https://cdn.segmentfault.com/r-cce1b45f/favicon.ico">
+    <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="SegmentFault">
+    <link rel="alternate" type="application/atom+xml" href="/feeds/questions" title="SegmentFault 最新问题">
+    <link rel="alternate" type="application/atom+xml" href="/feeds/blogs" title="SegmentFault 最新文章">
+    <link rel="stylesheet" href="https://cdn.segmentfault.com/r-cce1b45f/umi.css">
+    <script>
+      window.routerBase = "/";
+    </script>
+    <script>
+      window.publicPath =
+        window.resourceBaseUrl || "https://cdn.segmentfault.com/r-cce1b45f/";
+    </script>
+    <script>
+      //! umi version: 3.5.20
+    </script>
+  <meta data-react-helmet="true" name="keywords" content="golang,golang"><meta data-react-helmet="true" name="description" content="前言 golang读取文件的方式主要有4种： 使用File自带的Read方法 使用bufio库的Read方法 使用io/ioutil库的ReadAll() 使用io/ioutil库的ReadFile() 关于前3种..."><meta data-react-helmet="true" name="userId" value="1030000041433462" id="SFUserId"><meta data-react-helmet="true" name="userRank" value="1" id="SFUserRank"><meta data-react-helmet="true" name="twitter:card" content="summary"><meta data-react-helmet="true" name="twitter:image" content="https://cdn.segmentfault.com/r-cce1b45f/touch-icon.png"><meta data-react-helmet="true" name="twitter:site" content="@segment_fault"><meta data-react-helmet="true" name="twitter:creator" content="@segmentfault"><meta data-react-helmet="true" name="twitter:title" content="golang bufio、ioutil读文件的速度比较（性能测试）和影响因素分析"><meta data-react-helmet="true" name="og:type" content="article"><meta data-react-helmet="true" name="og:image" content="https://cdn.segmentfault.com/r-cce1b45f/touch-icon.png"><meta data-react-helmet="true" name="og:title" content="golang bufio、ioutil读文件的速度比较（性能测试）和影响因素分析"><meta data-react-helmet="true" name="og:description" content="前言 golang读取文件的方式主要有4种： 使用File自带的Read方法 使用bufio库的Read方法 使用io/ioutil库的ReadAll() 使用io/ioutil库的ReadFile() 关于前3种..."><meta data-react-helmet="true" name="og:url" content="https://segmentfault.com/a/1190000011680507"><meta data-react-helmet="true" name="og:site_name" content="SegmentFault 思否"><meta data-react-helmet="true" name="msvalidate.01" content="2C018C53297C8388F3E7052F5E9CA6AF"><meta data-react-helmet="true" name="event-object" value="{&quot;current&quot;: [&quot;article&quot;, [&quot;1190000011680507&quot;]], &quot;root&quot;: [&quot;article&quot;, &quot;1190000011680507&quot;]}" id="SFEventObject"><script data-react-helmet="true" async="true" defer="true" data-domain="segmentfault.com" src="https://stats.segmentfault.net/js/plausible.js"></script><script data-react-helmet="true" type="application/ld+json">{
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": "https://google.com/article"
+            },
+            "name": "golang bufio、ioutil读文件的速度比较（性能测试）和影响因素分析",
+            "headline": "golang bufio、ioutil读文件的速度比较（性能测试）和影响因素分析",
+            "image": "https://cdn.segmentfault.com/r-cce1b45f/touch-icon.png",
+            "datePublished": "2017-10-23T08:47:29.000Z",
+            "dateModified": "2017-10-23T08:47:48.000Z",
+            "url": "https://segmentfault.com/a/1190000011680507",
+            "author": {
+              "@type": "Person",
+              "name": "肥羊"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "SegmentFault",
+              "logo": {
+                "@type": "ImageObject",
+                "url":
+                  "https://assets.segmentfault.com/v-5fc4b0b2/global/img/static/touch-icon.png"
+              }
+            }
+          }</script><link rel="preload" href="https://cdn.segmentfault.com/r-cce1b45f/layouts__index~p__Video__Add.chunk.css" as="style" /><link rel="stylesheet" href="https://cdn.segmentfault.com/r-cce1b45f/layouts__index~p__Video__Add.chunk.css" />
+<link rel="preload" href="https://cdn.segmentfault.com/r-cce1b45f/layouts__index.chunk.css" as="style" /><link rel="stylesheet" href="https://cdn.segmentfault.com/r-cce1b45f/layouts__index.chunk.css" />
+<link rel="preload" href="https://cdn.segmentfault.com/r-cce1b45f/p__ArticleDetail.chunk.css" as="style" /><link rel="stylesheet" href="https://cdn.segmentfault.com/r-cce1b45f/p__ArticleDetail.chunk.css" />
+</head>
+  <body>
+    <div id="root"><style></style><div class="d-none d-lg-block text-center"><div id="OA_holder_5" class="ad-container" style="display:none"></div></div><div class="position-fixed" style="top:58px;left:0;right:0;margin:auto;z-index:5"><div class="toast-container position-absolute top-0 start-50 translate-middle-x"></div><div class="toast-container position-absolute top-0 start-50 translate-middle-x"></div></div><div id="root-top-container"></div><nav id="sf-header" class="bg-white shadow-sm sticky-top navbar navbar-expand-lg navbar-light"><div class="position-relative container"><div aria-controls="basic-navbar-nav" aria-label="Toggle navigation" class="self-nav-toogle___jVdh3 navbar-toggler collapsed"><span class="navbar-toggler-icon"></span></div><div class="left-wrap d-flex justify-content-between align-items-center nav-grow"><a href="/" class="sf-header___2cUz5 me-3 me-md-0 me-lg-3 navbar-brand"><img src="https://cdn.segmentfault.com/r-cce1b45f/static/logo-b.d865fc97.svg" width="139" height="26" class="lg-show" alt="segmentfault"/><img src="https://cdn.segmentfault.com/r-cce1b45f/static/sf-icon-small.82a498f6.svg" width="30" height="30" class="lg-none" alt="segmentfault"/></a><div class="d-flex lg-none align-items-center"><a href="/search" aria-label="搜索" class="d-inline-block text-center text-secondary position-relative" style="font-size:20px;width:44px"><i class="fa-fw far fa-magnifying-glass"></i></a><a href="/user/notifications" aria-label="通知" class="d-inline-block text-center text-secondary position-relative" style="font-size:20px;width:44px"><i class="fa-fw far fa-bell"></i></a><a href="/user/messages" aria-label="私信" class="d-inline-block text-center text-secondary position-relative" style="font-size:20px;width:44px"><i class="fa-fw far fa-envelope"></i></a><div style="width:44px" class="position-relative text-end dropdown"><a class="nav-link p-0" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="/u/gherror"><img class="rounded-circle d-lg-inline-block" width="32" height="32" src="https://image-static.segmentfault.com/317/931/3179314346-5f61e47221e07" alt="头像"/><span class="d-lg-none"></span></a></div></div></div><div class="justify-content-between navbar-collapse collapse" id="basic-navbar-nav"><div class="fw-bold navbar-nav"><a href="/questions" data-rr-ui-event-key="/questions" class="nav-link">问答</a><a href="/blogs" data-rr-ui-event-key="/blogs" class="nav-link">专栏</a><a href="https://ke.segmentfault.com" target="_blank" class="nav-link lg-show">课程</a><a href="/jobs" data-rr-ui-event-key="/jobs" class="d-flex align-items-center nav-link">招聘<i class="ms-1 text-danger fas fa-fire" style="width:0.88rem;vertical-align:text-bottom"></i></a><a href="/events" data-rr-ui-event-key="/events" class="nav-link">活动</a><div class="lg-show  hover-down  nav-item dropdown"><a id="basic-nav-dropdown" aria-expanded="false" role="button" class="dropdown-toggle nav-link" tabindex="0">发现</a></div></div><div class="d-none d-xl-block px-3 header-search___28AtS"><div id="header-tsearch-toogle" class="dropdown"><div class="position-relative dropdown-toggle" id="react-aria-3" aria-expanded="false"><div class="icon-search"><i class="far fa-magnifying-glass text-secondary"></i></div><input type="text" name="q" placeholder="搜索关键字" aria-label="搜索" value="" autoComplete="off" class="me-sm-2 w-100 input form-control"/></div><div data-bs-popper="static" class="w-100 dropdown-menu"><a href="https://www.bing.com/search?q=site:segmentfault.com%20" target="_blank" aria-selected="true" data-rr-ui-dropdown-item="" class="dropdown-item active"><span class="search-name">✓</span>使用“Bing”搜本站</a><a href="https://cse.google.com/cse?cx=007438528117617975633:unedhtbhte0&amp;q=" target="_blank" aria-selected="false" data-rr-ui-dropdown-item="" class="dropdown-item"><span class="search-name"></span>使用“Google”搜本站</a><a href="http://www.baidu.com/s?wd=site%3Asegmentfault.com%20" target="_blank" aria-selected="false" data-rr-ui-dropdown-item="" class="dropdown-item"><span class="search-name"></span>使用“百度”搜本站</a><a href="/search?q=" target="_self" aria-selected="false" data-rr-ui-dropdown-item="" class="dropdown-item"><span class="search-name"></span>站内搜索</a></div></div></div><ul class="navbar-nav navbar-user align-items-lg-center lg-show flex"><div class="position-relative dropdown"><button id="header-write" aria-expanded="false" type="button" class="me-2 dropdown-toggle btn btn-primary"><span class="me-1">撰写</span></button></div><div class="d-none d-lg-block d-xl-none nav-item"><a href="/search" aria-label="搜索" class="nav-link"><i class="fa-fw far fa-magnifying-glass"></i></a></div><div class="nav-item position-relative d-none d-lg-block dropdown"><a class="dropdown-no-angle nav-link dropdown-toggle" id="header-ntice" aria-expanded="false" style="cursor:pointer" href="/user/notifications"><i class="me-1 fa-fw far fa-bell"></i><span class="d-lg-none">通知</span></a></div><div class="d-lg-none nav-item"><a href="/user/notifications" class="nav-link" aria-label="通知"><i class="me-1 fa-fw far fa-bell"></i><span class="d-lg-none">通知</span></a></div><div id="letter" class="nav-item position-relative d-none d-lg-block dropdown"><a class="dropdown-no-angle nav-link dropdown-toggle" id="header-letter" aria-expanded="false" style="cursor:pointer" href="/user/messages"><i class="me-1 fa-fw far fa-envelope"></i><span class="d-lg-none">私信</span></a></div><div class="d-lg-none nav-item"><a href="/user/messages" class="nav-link" aria-label="私信"><i class="me-1 fa-fw far fa-envelope"></i><span class="d-lg-none">私信</span></a></div><div class="position-relative ms-2 dropdown"><a class="nav-link p-0" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="/u/gherror"><img class="rounded-circle d-lg-inline-block" width="32" height="32" src="https://image-static.segmentfault.com/317/931/3179314346-5f61e47221e07" alt="头像"/><span class="d-lg-none">我的</span></a></div></ul></div></div></nav><div class="d-none d-xl-flex justify-content-center"><div id="OA_holder_2" class="ad-container" style="display:block"></div></div><div class="article-content pt-3 pt-sm-0 container"><nav aria-label="breadcrumb" class="font-size-14 px-0 my-0 position-relative mx-4 mx-md-0 d-none d-sm-block" style="z-index:1"><ol class="breadcrumb bg-transparent"><li class="breadcrumb-item"><a href="/">首页</a></li><li class="breadcrumb-item"><a href="/blogs">专栏</a></li><li class="breadcrumb-item"><a href="/blog/shpskn">羊皮卷</a></li><li class="breadcrumb-item active" aria-current="page">文章详情</li></ol></nav><div class="row"><div class="col-xl w-0 col-12"><div class="sticky-wrap sticky-top functional-area-left d-none d-xl-flex justify-content-center pt-5 functional-area-left2"><div role="group" class="align-items-center btn-group-vertical"><button aria-label="点赞" type="button" class="func-btn mainLike  sflex-center shadow-sm rounded-circle main-lg-Like mb-3 btn btn-outline-primary"><i class="far fa-thumbs-up"></i><span class="mainLikeNum ">13</span></button><button aria-label="收藏" type="button" class="func-btn sflex-center rounded-circle mb-2 btn btn-outline-secondary"><i class="far fa-bookmark"></i></button><a class="func-btn sflex-center btn btn-outline-secondary rounded-circle mb-2" href="#comment-area" aria-label="评论"><i class="far fa-message-lines"></i></a><div class="dropdown"><a href="###" class="func-btn nav-tab-item  rounded-pill btn btn-outline-secondary sflex-center rounded-circle dropdown-toggle"><i class="far fa-share-nodes"></i></a></div></div></div><canvas hidden="" class="qrcode"></canvas><div class="mb-4 card"><div class="p-lg-30 position-relative card-body"><h1 class="h2 mb-3"><a href="/a/1190000011680507" class="text-body">golang bufio、ioutil读文件的速度比较（性能测试）和影响因素分析</a></h1><div class="d-flex align-items-center justify-content-between flex-wrap mb-4"><div class="d-flex align-items-center flex-wrap"><a href="/u/fat_sheep" class="d-flex align-items-center"><picture class="me-2"><img src="https://image-static.segmentfault.com/317/931/3179314346-5f61e47221e07" alt="" class="d-inline-block rounded-circle" width="32" height="32"/></picture><strong class="align-self-center font-size-14">肥羊</strong></a><time class="text-secondary font-size-14" dateTime="2017-10-23T08:47:29.000Z" itemProp="datePublished" style="margin-left:12px">发布于 <!-- -->2017-10-23 </time></div></div><div id="OA_holder_25" class="ad-container" style="display:block"></div><article class="article fmt article-content ">
+<h2>前言</h2>
+<p>golang读取文件的方式主要有4种：</p>
+<ol>
+<li>使用File自带的Read方法</li>
+<li>使用bufio库的Read方法</li>
+<li>使用io/ioutil库的ReadAll()</li>
+<li>使用io/ioutil库的ReadFile()</li>
+</ol>
+<p>关于前3种方式的速度比较，我最早是在 <a href="https://link.segmentfault.com/?enc=6rG%2BgCRUDFP9zCTdZ5mDJQ%3D%3D.DOgRqcfcv%2BX6MRYwu1YwgbJIijnCjVudjhlDVA15QUQCbiCQxjnXRv2%2FDQ8jwwHH" rel="nofollow">GoLang几种读文件方式的比较</a> 看过，但在该blog的评论区有人（<a href="https://link.segmentfault.com/?enc=79esew%2BgGqeGVc2y0dZNdw%3D%3D.CFpSOsJdxTZH1zpmFBoiIvfx3WbdZs%2BEFGqXqwdlJrg%3D" rel="nofollow">study_c</a>）提出了质疑，并提供了测试代码。根据该代码的测试，结果应该是</p>
+<blockquote><p><strong>bufio</strong> &gt; <strong>ioutil.ReadAll</strong> &gt; File自带Read</p></blockquote>
+<p>在我反复跑<a href="https://link.segmentfault.com/?enc=BTBrKcjqsvYu9ilCl6uKZg%3D%3D.SI3%2B0YEYdSPh7AjRN2ODeTibytoikBeQX%2FrqJKsIkis%3D" rel="nofollow">study_c</a>测试代码过程中发现几个问题或者说是影响因素：</p>
+<ul>
+<li>Read()每次读取的块的大小对结果也是有影响的</li>
+<li>连续测试同一个文件，会从系统缓存或是SSD缓存加载文件，后面的测试结果会被加速</li>
+</ul>
+<p>所以本文的性能测试就是基于<a href="https://link.segmentfault.com/?enc=xOH1oX8pZigRpgzo3xX9%2BA%3D%3D.ph657P3BJ8HFX1GlH43ijreZyZC7pBKyc7%2FkFZjGmk8%3D" rel="nofollow">study_c</a>的代码的基础上做了修改，尝试测试不同块大小对结果的影响，并增加对ioutil.ReadFile()的测试，还有随机生成文件以应对缓存影响公平性。</p>
+<h2>性能测试</h2>
+<p>测试环境</p>
+<blockquote><p>CPU: i5-6300HQ<br>MEM: 12GB<br>DSK: SANDISK Extreme PRO SSD 480GB<br>OS : WIN 10 64bit</p></blockquote>
+<p><strong>测试代码1【randfiles.go】，生成1-500MB包含随机字符串的文件</strong></p>
+<pre><code>package main
+
+import (
+    "math/rand"
+    "fmt"
+    "flag"
+    "strconv"
+    "io/ioutil"
+)
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-golang
+func RandStringBytes(n int) []byte {
+    b := make([]byte, n)
+    for i := range b {
+        b[i] = letterBytes[rand.Intn(len(letterBytes))]
+    }
+    return b
+}
+func RandFile(path string,filesizeMB int) {
+    b:=RandStringBytes(filesizeMB * 1024)    //生成1-500KB大小的随机字符串
+    bb := make([]byte, filesizeMB * 1024 * 1024)
+    for i:=0;i&lt;1024;i++ {    //复制1024遍
+        copy(bb[len(b)*i:len(b)*(i+1)],b)
+    }
+    //fmt.Printf("%s",b)
+    ioutil.WriteFile(path,bb,0666)
+}
+func main() {
+    flag.Parse()
+    filesizeMB,err :=strconv.Atoi(flag.Arg(0))        //1-500MB大小的文件
+    if err != nil{panic(err)}
+    if filesizeMB &gt; 500 {panic("too large file,&gt;500MB")}
+    RandFile("./random1.txt",filesizeMB)
+    RandFile("./random2.txt",filesizeMB)
+    RandFile("./random3.txt",filesizeMB)
+    RandFile("./random4.txt",filesizeMB)
+    fmt.Printf("Created 4 files, each file size is %d MB.",filesizeMB)
+}</code></pre>
+<p>测试代码2【speed.go】，性能测试</p>
+<pre><code>package main
+
+import(
+    "fmt"
+    "os"
+    "flag"
+    "io"
+    "io/ioutil"
+    "bufio"
+    "time"
+    "strconv"
+)
+
+func read1(path string,blocksize int){
+    fi,err := os.Open(path)
+    if err != nil{
+        panic(err)
+    }
+    defer fi.Close()
+    block := make([]byte,blocksize)
+    for{
+        n,err := fi.Read(block)
+        if err != nil &amp;&amp; err != io.EOF{panic(err)}
+        if 0 ==n {break}
+    }
+}
+
+func read2(path string,blocksize int){
+    fi,err := os.Open(path)
+    if err != nil{panic(err)}
+    defer fi.Close()
+    r := bufio.NewReader(fi)
+    block := make([]byte,blocksize)
+    for{
+        n,err := r.Read(block)
+        if err != nil &amp;&amp; err != io.EOF{panic(err)}
+        if 0 ==n {break}
+    }
+}
+
+func read3(path string){
+    fi,err := os.Open(path)
+    if err != nil{panic(err)}
+    defer fi.Close()
+    _,err = ioutil.ReadAll(fi)
+}
+
+func read4(path string){
+    _,err := ioutil.ReadFile(path)
+    if err != nil{panic(err)}
+}
+
+func main(){
+    flag.Parse()
+    file1 := "./random1.txt"
+    file2 := "./random2.txt"
+    file3 := "./random3.txt"
+    file4 := "./random4.txt"
+    blocksize,_ :=strconv.Atoi(flag.Arg(0))
+    var start,end time.Time
+    start = time.Now()
+    read1(file1,blocksize)
+    end = time.Now()
+    fmt.Printf("file/Read() cost time %v\n",end.Sub(start))
+    start = time.Now()
+    read2(file2,blocksize)
+    end = time.Now()
+    fmt.Printf("bufio/Read() cost time %v\n",end.Sub(start))
+    start = time.Now()
+    read3(file3)
+    end = time.Now()
+    fmt.Printf("ioutil.ReadAll() cost time %v\n",end.Sub(start))
+    start = time.Now()
+    read4(file4)
+    end = time.Now()
+    fmt.Printf("ioutil.ReadFile() cost time %v\n",end.Sub(start))
+}</code></pre>
+<p>测试结果：<br><span class="img-wrap"><img class="lazy" referrerpolicy="no-referrer" data-src="/img/bVXaf0?w=864&amp;h=663" alt="图片描述" title="图片描述"></span><br>测试1:块大小为4KB，这是个常见的大小，出人意料ioutil.ReadAll()最慢<br>测试2:块大小为1KB，这是前言提到的测试结果所用的块大小，与其测试结果一致<br>测试3:块大小为32KB，在大块的情况下，调用Read()次数更少，bufio已经没有优势，但前两者却远快于ioutil包的两个函数<br>测试4:块大小为16字节，在小块的情况下，没有缓存的文件普通Read成绩惨不忍睹</p>
+<h2>影响因素</h2>
+<p>在查阅golang标准库的源代码后，之所以有不同的结果是与每个方法的实现相关的，最大的因素就是内部buffer的大小，这个直接决定了读取的快慢：</p>
+<ol>
+<li>f.Read()底层实现是系统调用syscall.Read()，没有深究</li>
+<li>bufio.NewReader(f)实际调用NewReaderSize(f, defaultBufSize)，而defaultBufSize=4096，可以直接用bufio.NewReaderSize(f,32768)来预分配更大的缓存，缓存的实质是make([]byte, size)</li>
+<li>ioutil.ReadAll(f)实际调用readAll(r, bytes.MinRead)，而bytes.MinRead=512，缓存的实质是bytes.NewBuffer(make([]byte, 0, 512)，虽然bytes.Buffer会根据情况自动增大，但每次重新分配都会影响性能</li>
+<li>ioutil.ReadFile(path)是调用readAll(f, n+bytes.MinRead)，这个n取决于文件大小，文件小于10^9字节（0.93GB），n=文件大小，就是NewBuffer一个略大于文件大小的缓存，非常慷慨；大于则n=0，好惨，也就是说大于1G的文件就跟ioutil.ReadAll(f)一个样子了。</li>
+<li>但全量缓存的ReadFile为什么不如大块读取的前两者呢？我猜测是NewBuffer包装的字节数组性能当然不如裸奔的字符数组。。</li>
+</ol>
+<h2>结论</h2>
+<ul>
+<li><strong>当每次读取块的大小小于4KB，建议使用bufio.NewReader(f), 大于4KB用bufio.NewReaderSize(f,缓存大小)</strong></li>
+<li><strong>要读Reader, 图方便用ioutil.ReadAll()</strong></li>
+<li><strong>一次性读取文件，使用ioutil.ReadFile()</strong></li>
+<li>不同业务场景，选用不同的读取方式</li>
+</ul>
+</article><div class="d-flex flex-wrap align-items-center "><div class="m-n1 d-flex flex-wrap align-items-center"><a href="/t/golang" class="m-1 badge-tag  ">golang</a></div></div><div class="my-4"><div id="OA_holder_3" class="ad-container" style="display:block"></div></div><div class="text-secondary font-size-14 mt-3 mb-5 d-flex flex-wrap justify-content-between"><div><span>阅读 <!-- -->13.1k</span><span class="split-dot"></span><time dateTime="2017-10-23T08:47:29.000Z" itemProp="datePublished">更新于 <!-- -->2017-10-23 </time></div><div class="operation text-end"><div><a class="text-secondary" href="###"><span>举报</span></a></div></div></div><div class="functional-area-bottom text-center"><div role="group" class="btn-group like-group align-items-center btn-group"><button type="button" class="btn me-2 rounded btn btn-outline-primary"><i class="far fa-thumbs-up"></i><span class="ms-1">赞</span><span class="mainLikeNum ms-1">13</span></button><button type="button" class="btn me-2 rounded btn btn-outline-secondary"><i class="far fa-bookmark"></i><span class="ms-1">收藏</span><span class="ms-1">12</span></button><div class="bottom-share-wrap dropdown"><a href="###" class="nav-tab-item btn d-flex justify-content-center align-items-center dropdown-toggle"><button type="button" class="btn rounded btn btn-outline-secondary"><i class="far fa-share-nodes"></i><span class="ms-1">分享</span></button></a></div></div></div><canvas hidden="" class="qrcode"></canvas><div class="font-size-14 text-secondary text-center mt-3 mb-5"><span>本作品系原创，</span><a target="_blank" class="text-secondary" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">采用《署名-非商业性使用-禁止演绎 4.0 国际》许可协议</a></div><hr class="mb-0"/><div class="pt-4 align-items-center row"><div class="d-flex align-items-center col-12 col-md w-0 col"><a href="/blog/shpskn"><img class="me-3 rounded" width="64" height="64" src="https://image-static.segmentfault.com/383/303/3833030929-5ffd15fc110ab" aria-hidden="true"/></a><div class="w-100"><a href="/blog/shpskn" class="text-body"><h5 class="mb-0">羊皮卷</h5></a><div class="text-truncate-1 text-secondary mt-2">填坑日记</div></div></div><div id="followUser" class="col-md-90 col-12 mt-md-0 mt-3 col"><div class="d-grid"><button type="button" class="btn btn-primary">关注专栏</button></div></div></div></div></div><div class="d-block d-xl-none my-4"><div class="card"><div class="card-body"><div class="d-flex align-items-center mb-3"><picture class="rounded-circle me-3"><a href="/u/fat_sheep"><img src="https://image-static.segmentfault.com/317/931/3179314346-5f61e47221e07" alt="avatar" width="64" height="64" class="rounded-circle"/></a></picture><div><h5 class="mb-0"><a href="/u/fat_sheep" class="text-body">肥羊</a></h5></div></div><div class="d-flex align-items-center mb-3"><div class="me-4"><strong>57</strong><span class="text-secondary"> 声望</span></div><div><strong>3</strong><span class="text-secondary"> 粉丝</span></div></div><div class="d-grid"><button type="button" class="btn btn-primary">关注作者</button></div></div></div></div><div><div id="comment-area" class="comment-wrap  card"><div class="d-flex align-items-center justify-content-between bg-transparent card-header"><strong>0<!-- --> 条评论</strong><div aria-label="Basic" role="group" class="btn-group"><a href="/a/1190000011680507?sort=votes" role="button" tabindex="0" class="btn btn-secondary btn-sm">得票</a><a href="/a/1190000011680507?sort=newest" role="button" tabindex="0" class="btn btn-outline-secondary btn-sm">最新</a></div></div><div class="card-body"><div class="mb-4 media" tabindex="1"><img src="https://image-static.segmentfault.com/317/931/3179314346-5f61e47221e07" class="rounded-circle me-3" width="38" height="38" aria-hidden="true"/><div class="media-body"><div class="mb-3"><div class="mentions-wrap dropdown"><textarea rows="1" placeholder="撰写评论 …" aria-label="评论" class="comment-text form-control"></textarea><div class="dropdown-toggle"></div></div><div class="invalid-feedback"></div></div><div class="d-flex justify-content-end align-items-center"><a href="###" class="me-3" aria-label="提示" tabindex="-1"><i class="far fa-circle-info text-secondary"></i></a><button disabled="" type="button" class="float-end btn btn-primary">提交评论</button></div></div></div><div class="comment-body-wrap d-none"></div></div></div></div></div><div class="col-xl-auto w-xl-300 d-none d-xl-block p-0 right-side col-12"><div class="sticky-outer-wrapper"><div class="sticky-inner-wrapper" style="position:relative;top:0px;z-index:5"><div class="right-block" id="author"><div class="card"><div class="card-body"><div class="d-flex align-items-center mb-3"><picture class="rounded-circle me-3"><a href="/u/fat_sheep"><img src="https://image-static.segmentfault.com/317/931/3179314346-5f61e47221e07" alt="avatar" width="64" height="64" class="rounded-circle"/></a></picture><div><h5 class="mb-0"><a href="/u/fat_sheep" class="text-body">肥羊</a></h5></div></div><div class="d-flex align-items-center mb-3"><div class="me-4"><strong>57</strong><span class="text-secondary"> 声望</span></div><div><strong>3</strong><span class="text-secondary"> 粉丝</span></div></div><div class="d-grid"><button type="button" class="btn btn-primary">关注作者</button></div></div></div></div></div></div><div class="sticky-outer-wrapper"><div class="sticky-inner-wrapper" style="position:relative;top:0px;z-index:4"><div class="right-block" id="first-ad"><div class="card border-0 overflow-hidden d-none d-xl-flex justify-content-center align-items-center float-ads"><div id="OA_holder_1" class="ad-container" style="display:block"></div></div></div></div></div><div class="sticky-outer-wrapper"><div class="sticky-inner-wrapper" style="position:relative;top:0px;z-index:3"><div id="cataLog" class="right-block"><div data-article-nav="true" class="overflow-hidden d-none d-xl-flex card"><div class="d-flex justify-content-between align-items-center  bg-white  card-header"><strong class="nav-header p-0">文章目录</strong><div class="mb-0 form-check form-switch"><input type="checkbox" id="follow-switch" class="form-check-input"/><label title="" for="follow-switch" class="form-check-label">跟随</label></div></div><div class="p-0 py-2 card-body" id="collapseTarget"><nav id="article-nav-list" class="list-group list-group-flush d-flex flex-column font-size-14" data-article-nav-list="true"></nav></div></div></div></div></div><div id="gridAd" class="right-block"><div class="card"><div class="bg-white border-0 card-header"><strong>宣传栏</strong></div><div class="card-body"><div class="mb-3"><div id="OA_holder_7" class="ad-container" style="display:block"></div></div><div class="mb-3"><div id="OA_holder_9" class="ad-container" style="display:block"></div></div><div><div id="OA_holder_10" class="ad-container" style="display:block"></div></div></div></div></div><div class="sticky-outer-wrapper"><div class="sticky-inner-wrapper" style="position:relative;top:0px;z-index:2"><div id="second-ad"><div id="OA_holder_31" class="ad-container" style="display:block"></div></div></div></div></div></div><div id="fixedTools" class="position-fixed d-none " style="right:24px;bottom:24px"><button type="button" class="btn btn-light" title="回顶部">▲</button></div><div class="d-block d-sm-none fix-bottom-action-wrap"><div class="w-100 fixed-bottom-action d-flex align-items-center "><a class="text-center text-body w-25"><i class="far fa-thumbs-up"></i><span class="mainLikeNum ms-1">13</span></a><a class="text-center text-body w-25"><i class="far fa-bookmark"></i><span class="mainLikeNum ms-1">12</span></a><a class="text-center text-body w-25" href="#comment-area"><i class="far fa-message-lines"></i></a><div class="bottom-share-wrap w-25 text-center  dropdown"><a class="dropdown-toggle" id="share-bottom-toggle" aria-expanded="false"><i class="far fa-share-nodes text-body"></i></a></div></div><canvas hidden="" class="qrcode"></canvas></div></div><footer id="footer" class="d-none d-sm-block bg-white py-5 font-size-14"><div class="container"><div class="row"><dl class="col-4 col-md-2"><dt class="h6">产品</dt><dd class="my-1"><a class="text-secondary" href="/questions/hottest?utm_source=sf-footer" target="_blank">热门问答</a></dd><dd class="my-1"><a class="text-secondary" href="/blogs/hottest?utm_source=sf-footer" target="_blank">热门专栏</a></dd><dd class="my-1"><a class="text-secondary" href="/lives?utm_source=sf-footer" target="_blank">热门课程</a></dd><dd class="my-1"><a class="text-secondary" href="/events?utm_source=sf-footer" target="_blank">最新活动</a></dd><dd class="my-1"><a class="text-secondary" href="/groups?utm_source=sf-footer" target="_blank">技术圈</a></dd><dd class="my-1"><a class="text-secondary" href="/jobs?utm_source=sf-footer" target="_blank">酷工作</a></dd></dl><dl class="col-4 col-md-2"><dt class="h6">课程</dt><dd class="my-1"><a class="text-secondary" href="/lives/edu?tag=java&amp;sort=hottest&amp;utm_source=sf-footer" target="_blank">Java 开发课程</a></dd><dd class="my-1"><a class="text-secondary" href="/lives/edu?tag=php&amp;sort=hottest&amp;utm_source=sf-footer" target="_blank">PHP 开发课程</a></dd><dd class="my-1"><a class="text-secondary" href="/lives/edu?tag=python&amp;sort=hottest&amp;utm_source=sf-footer" target="_blank">Python 开发课程</a></dd><dd class="my-1"><a class="text-secondary" href="/lives/edu?category=1&amp;sort=hottest&amp;utm_source=sf-footer" target="_blank">前端开发课程</a></dd><dd class="my-1"><a class="text-secondary" href="/lives/study?category=3&amp;sort=hottest&amp;utm_source=sf-footer" target="_blank">移动开发课程</a></dd></dl><dl class="col-4 col-md-2 "><dt class="h6">资源</dt><dd class="my-1"><a class="text-secondary" href="/weekly?utm_source=sf-footer" target="_blank">每周精选</a></dd><dd class="my-1"><a class="text-secondary" href="/users?utm_source=sf-footer" target="_blank">用户排行榜</a></dd><dd class="my-1"><a class="text-secondary" href="/help?utm_source=sf-footer" target="_blank">帮助中心</a></dd><dd class="my-1"><a class="text-secondary" href="/0x?utm_source=sf-footer" target="_blank">建议反馈</a></dd></dl><dl class="col-4 col-md-2"><dt class="h6">合作</dt><dd class="my-1"><a class="text-secondary" href="https://about.segmentfault.com/?utm_source=sf-footer" target="_blank">关于我们</a></dd><dd class="my-1"><a class="text-secondary" href="https://business.segmentfault.com/ads?utm_source=sf-footer" target="_blank">广告投放</a></dd><dd class="my-1"><a class="text-secondary" href="/jobs?utm_source=sf-footer" target="_blank">职位发布</a></dd><dd class="my-1"><a class="text-secondary" href="https://jinshuju.net/f/HK5r9K?utm_source=sf-footer" target="_blank">讲师招募</a></dd><dd class="my-1"><a class="text-secondary" href="mailto:pr@segmentfault.com?utm_source=sf-footer" target="_blank">联系我们</a></dd><dd class="my-1"><a class="text-secondary" href="/link?utm_source=sf-footer" target="_blank">合作伙伴</a></dd></dl><dl class="col-4 col-md-2"><dt class="h6">关注</dt><dd class="my-1"><a class="text-secondary" href="/blog/segmentfault?utm_source=sf-footer" target="_blank">产品技术日志</a></dd><dd class="my-1"><a class="text-secondary" href="/blog/community_admin?utm_source=sf-footer" target="_blank">社区运营日志</a></dd><dd class="my-1"><a class="text-secondary" href="/blog/segmentfault_news?utm_source=sf-footer" target="_blank">市场运营日志</a></dd><dd class="my-1"><a class="text-secondary" href="/blog/segmentfault_team?utm_source=sf-footer" target="_blank">团队日志</a></dd><dd class="my-1"><a class="text-secondary" href="/blog/interview?utm_source=sf-footer" target="_blank">社区访谈</a></dd></dl><dl class="col-4 col-md-2" id="license"><dt class="h6">条款</dt><dd class="my-1"><a class="text-secondary" href="/tos?utm_source=sf-footer" target="_blank">服务协议</a></dd><dd class="my-1"><a class="text-secondary" href="/privacy?utm_source=sf-footer" target="_blank">隐私政策</a></dd><dd class="my-1"><a class="text-secondary" href="/app?utm_source=sf-footer">下载 App</a></dd><dd class="my-1"><div class="weixin-qrcode ms-n1" title="微信公众号"></div></dd></dl></div><hr class="mt-2 mb-4"/><div class="row"><div class="col-md-8"><div class="text-secondary"><p class="mb-1">Copyright © 2011-<!-- -->2022<!-- --> SegmentFault. 当前呈现版本 <!-- -->22.04.27</p><p class="mb-1"><a class="text-secondary me-2" target="_blank" href="http://beian.miit.gov.cn" rel="nofollow noreferrer">浙ICP备15005796号-2</a><a class="text-secondary me-2" target="_blank" href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010602002000" rel="nofollow noreferrer">浙公网安备33010602002000号</a><span class="text-secondary">ICP 经营许可 浙B2-20201554</span></p><p class="mb-0">杭州堆栈科技有限公司版权所有</p></div></div><div class="col-md-4 text-end"><div class="shareContent"><a class="share_weixin" data-share="weixin" href="#javascript" aria-label="微信"><i class="fab fa-weixin"></i></a><a class="share_weibo" data-share="weibo" href="http://weibo.com/segmentfault" target="_blank" aria-label="微博"><i class="fab fa-weibo"></i></a><a class="share_github" data-share="github" href="https://github.com/SegmentFault" target="_blank" aria-label="github"><i class="fab fa-github"></i></a><a class="share_twitter me-0" data-share="twitter" href="https://twitter.com/segment_fault" target="_blank" aria-label="twitter"><i class="fab fa-twitter"></i></a></div></div></div></div></footer></div>
+	<script>
+  window.g_useSSR = true;
+  window.g_initialProps = {"router":{"location":{"pathname":"\u002Fa\u002F1190000011680507","search":"","hash":"","query":{},"state":undefined,"key":"4dt0sg"},"action":"POP"},"@@dva":0,"action":{"1190000011680507":{"votes":13,"isLiked":false,"isHated":undefined,"bookmarks":12,"isBookmarked":false}},"sfApp":{"comment":{"isFetchComments":false,"isShowComment":false}},"article":{"articles":{"rows":[],"size":0,"offset":0,"hasMore":true,"error":false,"loading":false,"isStopLoad":false,"cutLoadNum":1,"isLoadedFirstRecommend":false,"query":""},"currentTab":""},"articleDetail":{"artDetail":{"1190000011680507":{"title":"golang - golang bufio、ioutil读文件的速度比较（性能测试）和影响因素分析_个人文章","keywords":"golang,golang","description":"前言 golang读取文件的方式主要有4种： 使用File自带的Read方法 使用bufio库的Read方法 使用io\u002Fioutil库的ReadAll() 使用io\u002Fioutil库的ReadFile() 关于前3种...","article":{"id":1190000011680507,"title":"golang bufio、ioutil读文件的速度比较（性能测试）和影响因素分析","cover":null,"tags_list":"1040000000090203,1040000000090203","user_id":1030000008007283,"blog_id":1200000008007571,"excerpt":"前言 golang读取文件的方式主要有4种： 使用File自带的Read方法 使用bufio库的Read方法 使用io\u002Fioutil库的ReadAll() 使用io\u002Fioutil库的ReadFile() 关于前3种...","parsed_text":"","is_bookmarked":false,"is_liked":false,"created":1508748449,"modified":1508748468,"real_views":13143,"real_unique_views":12460,"votes":13,"bookmarks":12,"status":0,"origin_url":"","article_type":1,"license":"0","langs":[],"comments":1,"tags":[{"id":1040000000090203,"url":"\u002Ft\u002Fgolang","name":"golang","icon_url":""}],"user":{"id":1030000008007283,"name":"肥羊","avatar_url":null,"url":"\u002Fu\u002Ffat_sheep","rank":57,"rank_word":"57","is_followed":false,"excerpt":null,"followers":3,"articles":4,"user_auth":null},"status_key":"available"},"blog":{"id":1200000008007571,"name":"羊皮卷","url":"\u002Fblog\u002Fshpskn","thumbnail_url":null,"is_followed":false,"excerpt":"填坑日记","followers":1,"articles":3,"license":"cc"},"actions":[],"member_actions":[],"article_types":{"1":"原创","2":"转载","3":"翻译"},"pay_info":null,"extra":{"reason":null,"operator":null,"operator_time":null},"tag":{"name":"golang","url":"\u002Ft\u002Fgolang","icon_url":""},"isServerLoaded":true}},"alertMsg":{"showAlert":false,"msg":""},"articleRelated":[]},"editor":{"markdownContent":"","title":{"value":"","isInvalid":false,"errorMsg":""},"log":{"value":"","isInvalid":false,"errorMsg":""},"tags":{"value":[],"isInvalid":false,"errorMsg":""},"draftInfo":{"id":"","status":""},"isFull":false,"initTags":[],"detail":{}},"global":{"sessionUser":{"user":{"id":1030000041433462,"slug":"gherror","name":"Herror","url":"\u002Fu\u002Fgherror","rank":1,"profile_url":"\u002Fu\u002Fgherror\u002Fprofile","avatar_url":null,"created":1645364482},"roles":{"is_admin":false,"is_editor":false},"is_change":false,"can_change":false},"isHiddenHeader":false,"isHiddenFooter":false,"title":"golang bufio、ioutil读文件的速度比较（性能测试）和影响因素分析 - SegmentFault 思否","isShowLogin":false,"beginnerGuideState":{"visible":false,"type":1},"isShowBindMobile":false,"authChannel":"","unactivated":false,"isShowRegister":false,"headOptions":{"keywords":"golang,golang","description":"前言 golang读取文件的方式主要有4种： 使用File自带的Read方法 使用bufio库的Read方法 使用io\u002Fioutil库的ReadAll() 使用io\u002Fioutil库的ReadFile() 关于前3种..."},"notices":[],"sessionInfo":{"key":"d627879ea3cbc0671a80e20a029e1561","login":true,"id":1030000041433462},"singleNotice":"","currentRoute":{"customLayout":false,"headerType":undefined,"platform":undefined,"eggCtx":{"request":{"method":"GET","url":"\u002Fa\u002F1190000011680507","header":{"host":"segmentfault.com","x-https-cn":"yes","x-ddos":"yes","connection":"close","sec-ch-ua":"\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"101\", \"Google Chrome\";v=\"101\"","sec-ch-ua-mobile":"?0","sec-ch-ua-platform":"\"Windows\"","upgrade-insecure-requests":"1","user-agent":"Mozilla\u002F5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\u002F537.36 (KHTML, like Gecko) Chrome\u002F101.0.4951.54 Safari\u002F537.36","accept":"text\u002Fhtml,application\u002Fxhtml+xml,application\u002Fxml;q=0.9,image\u002Favif,image\u002Fwebp,image\u002Fapng,*\u002F*;q=0.8,application\u002Fsigned-exchange;v=b3;q=0.9","sec-fetch-site":"cross-site","sec-fetch-mode":"navigate","sec-fetch-user":"?1","sec-fetch-dest":"document","accept-encoding":"gzip, deflate, br","accept-language":"en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7","cookie":"PHPSESSID=d627879ea3cbc0671a80e20a029e1561; _ga=GA1.2.942565992.1648713544; __gads=ID=d2a8d4da8ad3aab9-229c7edc6ad1000a:T=1648713613:RT=1648713613:S=ALNI_MZRiVFiM76sZActGnnodkZZXyrM1w; _gid=GA1.2.344056797.1651639873; csrfToken=jGy91mvv8y1I-AnkmV0oV6zb; isCloseBeginnerGuide=1; referer=http:\u002F\u002Fsegmentfault.com\u002Fwrite; PHPSESSID=d627879ea3cbc0671a80e20a029e1561; Hm_lvt_e23800c454aa573c0ccb16b52665ac26=1651756658; Hm_lpvt_e23800c454aa573c0ccb16b52665ac26=1651756658","x-forwarded-for":"59.78.58.216"}},"response":{"status":404,"message":"Not Found","header":{"set-cookie":["PHPSESSID=d627879ea3cbc0671a80e20a029e1561; path=\u002F; max-age=604800; expires=Thu, 12 May 2022 13:22:29 GMT; domain=.segmentfault.com"]}},"app":{"env":"prod","name":"server","baseDir":"\u002Fusr\u002Fsrc\u002Fapp","subdomainOffset":2,"config":"\u003Cegg config\u003E","controller":"\u003Cegg controller\u003E","httpclient":"\u003Cegg httpclient\u003E","loggers":"\u003Cegg loggers\u003E","middlewares":"\u003Cegg middlewares\u003E","router":"\u003Cegg router\u003E","serviceClasses":"\u003Cegg serviceClasses\u003E"},"originalUrl":"\u002Fa\u002F1190000011680507","req":"\u003Coriginal node req\u003E","res":"\u003Coriginal node res\u003E","socket":"\u003Coriginal node socket\u003E"}},"letterNum":0,"noticeNum":0,"serverData":{"userAgent":"Mozilla\u002F5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\u002F537.36 (KHTML, like Gecko) Chrome\u002F101.0.4951.54 Safari\u002F537.36","Token":"d627879ea3cbc0671a80e20a029e1561","X-Forwarded-For":"59.78.58.216"},"userStat":{},"newTask":{},"followedTags":[],"globalCss":"","baiduOxAppState":{"isShow":false,"copyUrl":""},"pageUsers":{},"wxShareCover":"","isBaiduOxApp":false,"showProductAuthModal":{"isShow":false,"title":""},"routeInterceptor":{"path":""},"safeCheckModal":{"isShow":false,"pageSource":""}},"video":{"videoData":{},"relationVideos":[],"videos":{"rows":[],"limit":0,"offset":0,"hasMore":true},"lives":[]},"activity":{"recommendList":[],"newestList":[],"finishedList":{},"eventType":[],"cityList":[]},"activityDetail":{"detailData":{}},"badges":{"listData":{},"detail":{},"records":{"page":1,"rows":[]},"loading":false},"blogHome":{"loading":false,"blogDetail":{},"articleData":{}},"blogs":{"channels":{},"articles":{"mode":"scrollLoad","page":1,"rows":[],"size":0,"offset":0,"hasMore":true,"error":false,"loading":false,"isStopLoad":false,"cutLoadNum":1,"isLoadedFirstRecommend":false},"currentTab":"recommendation","notices":{},"events":{},"recommendArticles":{},"hotQuestions":{},"hotTestData":{},"banners":{},"showOneLoading":false},"bookmark":{"loading":false,"detailInfo":{},"listInfo":{"page":1,"total_page":0,"rows":[]}},"deactivate":{"checkResult":{}},"dianping":{"homeInfo":{},"categroies":[],"categoryList":[],"categoryInfo":{},"loading":false,"companyInfo":{}},"dpDetail":{"dpDetail":{},"dpList":{"page":1,"total_page":10,"rows":[]},"usedsAndWishs":{"useds":0,"wisheds":0},"currentTab":"votes"},"draft":{"listData":{"rows":[],"hasMore":false,"page":1},"inviteListData":{"rows":[],"hasMore":false,"page":1},"inviteRegisterList":{"rows":[],"hasMore":false,"page":1},"loading":true},"help":{"reportRecord":{},"violationRecord":{},"appealsRecord":{},"communityGuide":{},"currentTab":"report"},"letterDetail":{"letterData":{"rows":[],"page":1,"size":100,"total_page":0,"hasMore":true},"loading":true,"readAll":false},"inbox":{"list":{"page":1,"count":0,"rows":{"inbox":{},"messages":[]},"total_page":1},"loading":false},"note":{"notes":{"rows":[],"page":1,"size":30,"hasMore":false,"sort":"modified","query":"mine","q":""},"bookmarkNotes":{"rows":[],"page":1,"size":30,"hasMore":false,"sort":"modified"},"noteDetail":{},"detail":[]},"noticeDetail":{"noticeData":{"rows":[],"offset":"","hasMore":true,"isStopScrollLoad":false,"loadedNum":1},"loading":true,"readAll":false},"personal":{"realTabName":"timeline","personalInfo":{},"listInfo":{},"blogs":[],"tags":{},"badges":{},"ranks":{},"loading":false,"financeInfo":{},"dashboardInfo":{},"dashboardHot":{"offset":1,"rows":[],"hasMore":false},"hotLoading":false},"personalSetting":{"userInfo":{},"accountInfo":{},"notifyInfo":{},"blockInfo":{"rows":[],"page":1,"total_page":1},"labInfo":{},"privacyInfo":{},"errorMsg":{"type":"","msg":""}},"portal":{"pageData":{},"noticeData":[]},"question":{"questionDetail":{},"relateDetail":{}},"questionList":{"questionList":{"page":1,"size":30,"count":0,"total_page":0,"rows":[]},"updateList":{"offset":"","rows":[]},"showLoading":false,"hostData":{},"userRank":{},"notices":{},"loading":false,"currentTab":"","isServerLoad":true},"review":{"loading":true,"articelDetail":{},"suggestEditDetail":{},"tagEditDetail":{},"questionDetail":{},"answerDetail":{},"closeDetail":{},"tagCleanDetail":{},"homeData":{"rows":[]}},"rivision":{"breadNav":[],"detail":[]},"search":{"result":{"rows":[],"page":1,"size":15,"q":"","total_page":0,"query":""}},"sites":{"questionList":{"page":1,"size":30,"count":0,"total_page":0,"rows":[]},"loading":false,"information":{},"articles":[]},"sitesSet":{"loading":false,"information":{}},"tag":{"rows":[],"loadMoreType":"scroll","offset":0,"page":1,"pageSize":30,"info":{},"loadedNum":0,"hasMore":false,"isStopLoad":false,"showLoading":true,"type":"","totalPage":0,"sort":"newest","allTagList":{}},"tagRivision":{"tagInfo":{},"detail":[]},"userTop":{"data":{}},"loading":{"global":false,"models":{"articleDetail":false},"effects":{"articleDetail\u002FgetArtDetail":false}}};
+	</script>
+
+    <script src="https://static.geetest.com/static/tools/gt.js"></script>
+    <script>
+      (function () {
+        var data = window.g_initialProps["gtagData"] || window["gtagData"];
+        var script = document.createElement("script");
+        script.src = "https://www.googletagmanager.com/gtag/js?id=UA-918487-8";
+        script.async = true;
+        script.onload = function () {
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function () {
+            window.dataLayer.push(arguments);
+          };
+          window.gtag("js", new Date());
+          window.gtag("config", "UA-918487-8");
+          data && window.gtag("set", data);
+        };
+        document.getElementsByTagName("head")[0].appendChild(script);
+      })();
+    </script>
+    <script src="https://cdn.segmentfault.com/r-cce1b45f/umi.js"></script>
+  
+
+</body></html>

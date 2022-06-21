@@ -84,6 +84,7 @@ func (mux *Mux) GETD(pattern string ,handler HandlerFunc){
 }
 */
 func (group *Routergroup) GETS(pattern string, filepath string){
+	//group.mux.router.addRoute("GET",pattern,http.FileServer(http.Dir("/usr")))
 	group.mux.router.addRoute("GET",pattern,group.handler_simple("GET",pattern,filepath))
 }
 
@@ -112,14 +113,18 @@ func(group *Routergroup)handler_simple(method string,pattern string,filepath str
 		Err("open:",err)
 		file,err:=ioutil.ReadAll(fd)
 		Err("read:",err)
-		w.Write(file)
 		//t,_:=template.ParseFiles(Pathjoin(path))
 		switch filetype {
 		case "json":
 			w.Header().Set("Content-Type","application/json")
 		case "html":
 			w.Header().Set("Content-Type","text/html")
+		case "css":
+			w.Header().Set("Content-Type","text/css")
+		case "js":
+			w.Header().Set("Content-Type","text/javascript")
 		}
+		w.Write(file)
 		//t.Execute(w,nil)
 
 		}
