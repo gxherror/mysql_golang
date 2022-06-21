@@ -413,7 +413,7 @@ var bundle *i18n.Bundle
 func main() {
 	bundle = i18n.NewBundle(language.SimplifiedChinese)
 	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
-	bundle.MustLoadMessageFile("../usr/json/en-us.json") // 从文件解析
+	bundle.MustLoadMessageFile("../usr/json/en-us.json") 
 	bundle.MustLoadMessageFile("../usr/json/el.json")
 	globalSessions, _ = session.NewManager("memory", "gosessionid", 3600)
 	go globalSessions.GC()

@@ -182,9 +182,6 @@ func fibonacci(c chan int, quit chan int) {
 	}
 }
 
-func main() {
-	
-}
 
 
 
